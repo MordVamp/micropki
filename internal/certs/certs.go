@@ -39,7 +39,7 @@ func GenerateRootCertificate(
 		return nil, err
 	}
 	template.SubjectKeyId = ski
-
+	template.AuthorityKeyId = ski
 	der, err := x509.CreateCertificate(rand.Reader, template, template, pub, priv)
 	if err != nil {
 		return nil, err

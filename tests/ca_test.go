@@ -234,7 +234,7 @@ func TestIntegrationCAInit(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "log.txt")
 
 	// Set up the arguments for the `ca init` subcommand
-	ca.CaCmd.SetArgs([]string{
+	ca.Cmd.SetArgs([]string{
 		"init",
 		"--subject", "CN=Integration Test CA,O=Test",
 		"--key-type", "rsa",
@@ -246,7 +246,7 @@ func TestIntegrationCAInit(t *testing.T) {
 	})
 
 	// Execute the command
-	if err := ca.CaCmd.Execute(); err != nil {
+	if err := ca.Cmd.Execute(); err != nil {
 		t.Fatalf("ca init failed: %v", err)
 	}
 
