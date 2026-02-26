@@ -18,52 +18,67 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	subject        string
-	keyType        string
-	keySize        int
-	passphraseFile string
-	outDir         string
-	validityDays   int
-	logFile        string
-)
+// CaCmd represents the parent ca command
+var CaCmd = &cobra.Command{
+	Use:   "ca",
+	Short: "Certificate Authority operations",
+	Long:  `Create and manage a Root or Intermediate CA, and issue certificates.`,
+}
 
-// Cmd is the `ca init` subcommand.
-var Cmd = &cobra.Command{
+func init() {
+	// Add subcommands
+	CaCmd.AddCommand(initCmd)
+	CaCmd.AddCommand(issueIntermediateCmd)
+	CaCmd.AddCommand(issueCertCmd)
+}
+
+// initCmd represents the `ca init` subcommand
+var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a self-signed Root CA",
 	Long:  `Generate a self-signed Root CA certificate and encrypted private key.`,
 	RunE:  runInit,
 }
 
+// Flags for init
+var (
+	initSubject        string
+	initKeyType        string
+	initKeySize        int
+	initPassphraseFile string
+	initOutDir         string
+	initValidityDays   int
+	initLogFile        string
+)
+
 func init() {
-	flags := Cmd.Flags()
-	flags.StringVar(&subject, "subject", "", "Distinguished Name (e.g., 'CN=My Root CA,O=Demo,C=US')")
-	flags.StringVar(&keyType, "key-type", "rsa", "Key type: rsa or ecc")
-	flags.IntVar(&keySize, "key-size", 4096, "Key size in bits (4096 for RSA, 384 for ECC)")
-	flags.StringVar(&passphraseFile, "passphrase-file", "", "Path to file containing passphrase for private key encryption")
-	flags.StringVar(&outDir, "out-dir", "./pki", "Output directory")
-	flags.IntVar(&validityDays, "validity-days", 3650, "Validity period in days")
-	flags.StringVar(&logFile, "log-file", "", "Log file path (default: stderr)")
+	flags := initCmd.Flags()
+	flags.StringVar(&initSubject, "subject", "", "Distinguished Name (e.g., 'CN=My Root CA,O=Demo,C=US')")
+	flags.StringVar(&initKeyType, "key-type", "rsa", "Key type: rsa or ecc")
+	flags.IntVar(&initKeySize, "key-size", 4096, "Key size in bits (4096 for RSA, 384 for ECC)")
+	flags.StringVar(&initPassphraseFile, "passphrase-file", "", "Path to file containing passphrase for private key encryption")
+	flags.StringVar(&initOutDir, "out-dir", "./pki", "Output directory")
+	flags.IntVar(&initValidityDays, "validity-days", 3650, "Validity period in days")
+	flags.StringVar(&initLogFile, "log-file", "", "Log file path (default: stderr)")
 
 	cobra.MarkFlagRequired(flags, "subject")
 	cobra.MarkFlagRequired(flags, "passphrase-file")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
-	if err := logger.Init(logFile); err != nil {
+	if err := logger.Init(initLogFile); err != nil {
 		return fmt.Errorf("failed to init logger: %w", err)
 	}
 	defer logger.Close()
 
 	logger.Info("Starting Root CA initialization")
 
-	if err := validateArgs(); err != nil {
+	if err := validateInitArgs(); err != nil {
 		logger.Error("Validation failed: %v", err)
 		return err
 	}
 
-	passphrase, err := os.ReadFile(passphraseFile)
+	passphrase, err := os.ReadFile(initPassphraseFile)
 	if err != nil {
 		logger.Error("Failed to read passphrase file: %v", err)
 		return fmt.Errorf("cannot read passphrase file: %w", err)
@@ -71,14 +86,14 @@ func runInit(cmd *cobra.Command, args []string) error {
 	passphrase = []byte(strings.TrimRight(string(passphrase), "\r\n"))
 	logger.Info("Passphrase loaded (length %d bytes)", len(passphrase))
 
-	name, err := ParseDN(subject)
+	name, err := ParseDN(initSubject)
 	if err != nil {
 		logger.Error("Invalid subject DN: %v", err)
 		return fmt.Errorf("invalid subject: %w", err)
 	}
 
-	privateDir := filepath.Join(outDir, "private")
-	certsDir := filepath.Join(outDir, "certs")
+	privateDir := filepath.Join(initOutDir, "private")
+	certsDir := filepath.Join(initOutDir, "certs")
 	for _, dir := range []string{privateDir, certsDir} {
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			logger.Error("Failed to create directory %s: %v", dir, err)
@@ -86,12 +101,12 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	logger.Info("Generating %s key (%d bits)", keyType, keySize)
+	logger.Info("Generating %s key (%d bits)", initKeyType, initKeySize)
 	var privKey crypto.PrivateKey
 	var pubKey crypto.PublicKey
-	switch keyType {
+	switch initKeyType {
 	case "rsa":
-		rsaKey, err := internalcrypto.GenerateRSAKey(keySize)
+		rsaKey, err := internalcrypto.GenerateRSAKey(initKeySize)
 		if err != nil {
 			logger.Error("RSA key generation failed: %v", err)
 			return err
@@ -119,8 +134,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 	serial := new(big.Int).SetBytes(serialBytes)
 	logger.Info("Serial number generated: %x", serial)
 
-	logger.Info("Creating self-signed certificate, validity %d days", validityDays)
-	certPEM, err := certs.GenerateRootCertificate(&name, pubKey, privKey, validityDays, serial)
+	logger.Info("Creating self-signed certificate, validity %d days", initValidityDays)
+	certPEM, err := certs.GenerateRootCertificate(&name, pubKey, privKey, initValidityDays, serial)
 	if err != nil {
 		logger.Error("Certificate generation failed: %v", err)
 		return fmt.Errorf("certificate creation failed: %w", err)
@@ -148,36 +163,36 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	logger.Info("Certificate saved")
 
-	policyPath := filepath.Join(outDir, "policy.txt")
+	policyPath := filepath.Join(initOutDir, "policy.txt")
 	logger.Info("Writing policy document to %s", policyPath)
-	if err := policy.Write(policyPath, &name, serial, validityDays, keyType, keySize); err != nil {
+	if err := policy.Write(policyPath, &name, serial, initValidityDays, initKeyType, initKeySize); err != nil {
 		logger.Error("Failed to write policy: %v", err)
 		return fmt.Errorf("policy creation failed: %w", err)
 	}
 	logger.Info("Policy document created")
 
 	logger.Info("Root CA initialization completed successfully")
-	fmt.Printf("Root CA successfully created in %s\n", outDir)
+	fmt.Printf("Root CA successfully created in %s\n", initOutDir)
 	return nil
 }
 
-func validateArgs() error {
-	if subject == "" {
+func validateInitArgs() error {
+	if initSubject == "" {
 		return fmt.Errorf("subject cannot be empty")
 	}
-	if keyType != "rsa" && keyType != "ecc" {
+	if initKeyType != "rsa" && initKeyType != "ecc" {
 		return fmt.Errorf("key-type must be 'rsa' or 'ecc'")
 	}
-	if keyType == "rsa" && keySize != 4096 {
+	if initKeyType == "rsa" && initKeySize != 4096 {
 		return fmt.Errorf("RSA key size must be 4096")
 	}
-	if keyType == "ecc" && keySize != 384 {
+	if initKeyType == "ecc" && initKeySize != 384 {
 		return fmt.Errorf("ECC key size must be 384")
 	}
-	if validityDays <= 0 {
+	if initValidityDays <= 0 {
 		return fmt.Errorf("validity-days must be positive")
 	}
-	if _, err := os.Stat(passphraseFile); err != nil {
+	if _, err := os.Stat(initPassphraseFile); err != nil {
 		return fmt.Errorf("passphrase file issue: %w", err)
 	}
 	return nil

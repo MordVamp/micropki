@@ -212,6 +212,7 @@ func TestPolicyWrite(t *testing.T) {
 }
 
 // TestIntegrationCAInit runs the full ca init command in a temp directory.
+
 func TestIntegrationCAInit(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -234,7 +235,7 @@ func TestIntegrationCAInit(t *testing.T) {
 	logFile := filepath.Join(tmpDir, "log.txt")
 
 	// Set up the arguments for the `ca init` subcommand
-	ca.Cmd.SetArgs([]string{
+	ca.CaCmd.SetArgs([]string{
 		"init",
 		"--subject", "CN=Integration Test CA,O=Test",
 		"--key-type", "rsa",
@@ -246,7 +247,7 @@ func TestIntegrationCAInit(t *testing.T) {
 	})
 
 	// Execute the command
-	if err := ca.Cmd.Execute(); err != nil {
+	if err := ca.CaCmd.Execute(); err != nil {
 		t.Fatalf("ca init failed: %v", err)
 	}
 

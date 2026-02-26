@@ -61,3 +61,42 @@ func ComputeSKI(pub crypto.PublicKey) ([]byte, error) {
 	hash := sha1.Sum(der)
 	return hash[:], nil
 }
+
+// DecryptPrivateKey decrypts an encrypted PEM private key using the passphrase.
+// It supports both PKCS#8 encrypted keys (ENCRYPTED PRIVATE KEY) and legacy encrypted PEM blocks.
+func DecryptPrivateKey(pemData []byte, passphrase []byte) (crypto.PrivateKey, error) {
+	block, _ := pem.Decode(pemData)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM")
+	}
+
+	var der []byte
+	var err error
+
+	// Handle different types
+	switch block.Type {
+	case "ENCRYPTED PRIVATE KEY":
+		// PKCS#8 encrypted key
+		der, err = x509.DecryptPEMBlock(block, passphrase)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt PKCS#8 key: %w", err)
+		}
+		return x509.ParsePKCS8PrivateKey(der)
+	case "RSA PRIVATE KEY":
+		// Legacy RSA encrypted key
+		der, err = x509.DecryptPEMBlock(block, passphrase)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt RSA key: %w", err)
+		}
+		return x509.ParsePKCS1PrivateKey(der)
+	case "EC PRIVATE KEY":
+		// Legacy EC encrypted key
+		der, err = x509.DecryptPEMBlock(block, passphrase)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt EC key: %w", err)
+		}
+		return x509.ParseECPrivateKey(der)
+	default:
+		return nil, fmt.Errorf("unsupported private key type: %s", block.Type)
+	}
+}

@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(ca.Cmd)
+	rootCmd.AddCommand(ca.CaCmd) // Add the parent ca command
 }
 
 func main() {
