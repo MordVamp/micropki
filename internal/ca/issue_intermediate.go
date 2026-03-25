@@ -17,6 +17,9 @@ import (
 	"micropki/internal/logger"
 	"micropki/internal/policy"
 
+	"micropki/internal/database"
+	pkgserial "micropki/internal/serial"
+
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +45,7 @@ var (
 	interValidityDays   int
 	interPathLen        int
 	interLogFile        string
+	interDbPath         string
 )
 
 func init() {
@@ -57,6 +61,7 @@ func init() {
 	flags.IntVar(&interValidityDays, "validity-days", 1825, "Validity period in days (default 5 years)")
 	flags.IntVar(&interPathLen, "pathlen", 0, "Path length constraint (default 0)")
 	flags.StringVar(&interLogFile, "log-file", "", "Log file path (default: stderr)")
+	flags.StringVar(&interDbPath, "db-path", "./pki/micropki.db", "SQLite database path")
 
 	cobra.MarkFlagRequired(flags, "root-cert")
 	cobra.MarkFlagRequired(flags, "root-key")
@@ -70,6 +75,11 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to init logger: %w", err)
 	}
 	defer logger.Close()
+
+	if err := database.InitDB(interDbPath); err != nil {
+		logger.Error("Failed to init database: %v", err)
+		return fmt.Errorf("database init failed: %w", err)
+	}
 
 	logger.Info("Starting Intermediate CA issuance")
 
@@ -171,13 +181,12 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 	logger.Info("Intermediate CSR created and verified")
 
 	// Generate serial number for intermediate certificate
-	serialBytes := make([]byte, 20)
-	if _, err := rand.Read(serialBytes); err != nil {
-		logger.Error("Failed to generate serial number: %v", err)
+	serial, err := pkgserial.GenerateUniqueSerial()
+	if err != nil {
+		logger.Error("Failed to generate unique serial number: %v", err)
 		return fmt.Errorf("serial generation failed: %w", err)
 	}
-	serial := new(big.Int).SetBytes(serialBytes)
-	logger.Info("Serial number generated: %x", serial)
+	logger.Info("Unique serial number generated: %x", serial)
 
 	// Compute SKI for intermediate public key
 	ski, err := internalcrypto.ComputeSKI(interPubKey)
@@ -254,6 +263,12 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot write certificate: %w", err)
 	}
 	logger.Info("Intermediate certificate saved to %s", certPath)
+
+	// Insert into DB
+	if err := database.InsertCertificate(serial, subjectName.String(), rootCert.Subject.String(), now, now.AddDate(0, 0, interValidityDays), certPEM); err != nil {
+		logger.Error("Database insertion failed: %v", err)
+		return fmt.Errorf("database insertion failed: %w", err)
+	}
 
 	// Optionally save CSR for audit
 	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})

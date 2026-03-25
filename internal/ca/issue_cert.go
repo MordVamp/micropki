@@ -16,6 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"micropki/internal/database"
+	pkgserial "micropki/internal/serial"
+
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +41,7 @@ var (
 	certOutDir       string
 	certValidityDays int
 	certLogFile      string
+	certDbPath       string
 )
 
 func init() {
@@ -52,6 +56,7 @@ func init() {
 	flags.StringVar(&certOutDir, "out-dir", "./pki/certs", "Output directory for certificate and key")
 	flags.IntVar(&certValidityDays, "validity-days", 365, "Validity period in days")
 	flags.StringVar(&certLogFile, "log-file", "", "Log file path (default: stderr)")
+	flags.StringVar(&certDbPath, "db-path", "./pki/micropki.db", "SQLite database path")
 
 	cobra.MarkFlagRequired(flags, "ca-cert")
 	cobra.MarkFlagRequired(flags, "ca-key")
@@ -68,6 +73,11 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to init logger: %w", err)
 	}
 	defer logger.Close()
+
+	if err := database.InitDB(certDbPath); err != nil {
+		logger.Error("Failed to init database: %v", err)
+		return fmt.Errorf("database init failed: %w", err)
+	}
 
 	logger.Info("Starting certificate issuance")
 
@@ -123,13 +133,12 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 	}
 
 	// Generate serial number
-	serialBytes := make([]byte, 20)
-	if _, err := rand.Read(serialBytes); err != nil {
-		logger.Error("Failed to generate serial number: %v", err)
+	serial, err := pkgserial.GenerateUniqueSerial()
+	if err != nil {
+		logger.Error("Failed to generate unique serial number: %v", err)
 		return fmt.Errorf("serial generation failed: %w", err)
 	}
-	serial := new(big.Int).SetBytes(serialBytes)
-	logger.Info("Serial number generated: %x", serial)
+	logger.Info("Unique serial number generated: %x", serial)
 
 	// Build certificate template
 	tmpl, err := templates.BuildTemplate(tmplType, &subjectName, certSANs, certValidityDays, serial)
@@ -264,6 +273,13 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 		}
 		logger.Info("Private key saved to %s (unencrypted)", keyPath)
 		logger.Warning("End-entity private key is stored unencrypted. Protect it appropriately.")
+	}
+
+	// Insert into DB
+	if err := database.InsertCertificate(serial, tmpl.Subject.String(), caCert.Subject.String(), tmpl.NotBefore, tmpl.NotAfter, certPEM); err != nil {
+		logger.Error("Database insertion failed: %v", err)
+		// Usually we'd rollback file creation if this was fully atomic, but we'll return an error.
+		return fmt.Errorf("database insertion failed: %w", err)
 	}
 
 	logger.Info("Certificate issuance completed successfully")
