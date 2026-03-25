@@ -44,7 +44,7 @@ func TestRepositoryEndpoints(t *testing.T) {
 	mux.ServeHTTP(wCRL, reqCRL)
 	
 	resCRL := wCRL.Result()
-	if resCRL.StatusCode != http.StatusNotImplemented {
-		t.Errorf("Expected GET /crl to return 501, got %d", resCRL.StatusCode)
+	if resCRL.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected GET /crl to legitimately return 404 since the file isn't created in test mode, got %d", resCRL.StatusCode)
 	}
 }

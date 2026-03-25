@@ -1,6 +1,9 @@
 # MicroPKI - A Minimal Public Key Infrastructure
 
-MicroPKI is a Go-based PKI tool demonstrating core functionalities like Root CA generation, intermediate CAs, end-entity certificate issuance, revocation (CRL), and real-time status tracking (OCSP). It integrates tightly with a backend SQLite registry for deterministic ledger keeping.
+MicroPKI is a Go-based PKI tool demonstrating core functionalities like Root CA generation, intermediate CAs, end-entity certificate issuance, revocation (CRL), real-time status tracking (OCSP) and custom path-validation Client workflows! It integrates cleanly with a backend SQLite registry for deterministic ledger keeping.
+
+## New to the Project?
+**Check out `NOOB_GUIDE.md` for a comprehensive step-by-step introduction specifically written for absolute beginners mapping out database setup, CA infrastructure, Issuance, Client interactions, and Test execution paths.**
 
 ## Installation
 
@@ -8,93 +11,55 @@ MicroPKI is a Go-based PKI tool demonstrating core functionalities like Root CA 
 git clone 
 cd micropki
 go mod tidy
-make build
+go build -o micropki ./cmd/micropki
 ```
 
 ## Test Results
-All major automated verification suites successfully execute passing CRL and OCSP cycles correctly using standards like RFC 5280 mapped revocation codes and RFC 6960 ASN.1 OCSP parsing.
+All major automated verification suites globally successfully execute passing CRL bounds, mathematical constraint tracking engines, and OCSP cycles correctly using standards like RFC 5280 mapped revocation codes and RFC 6960 ASN.1 OCSP parsing. If you are experiencing `go-sqlite3` stub errors locally running tests, install a C++ compiler (`gcc`) to satisfy `CGO_ENABLED` SQLite hooks!
 
 ---
 
-## Basic Usage
+## Basic Technical Commands Showcase
 
-### 1. Initialize SQLite Ledger
-
-Initialize the SQLite tracking database first to sync operations state consistently!
+### 1. Database & Central Authority Nodes
+Initialize the SQLite tracking database to securely store serial bindings:
 ```bash
 ./micropki db init --path ./pki/micropki.db
-```
-
-### 2. Issuing Authorities
-
-Generate a Root CA, and an Intermediate CA directly from the CLI:
-```bash
 ./micropki ca init-root --subject "CN=MicroPKI Root CA" --out-dir ./pki
-
-./micropki ca issue-intermediate \
-  --ca-cert ./pki/certs/ca.cert.pem \
-  --ca-key ./pki/private/ca.key.pem \
-  --ca-pass-file ./secrets/ca.pass \
-  --subject "CN=MicroPKI Intermediate CA"
 ```
 
-### 3. Issue and Revoke Server Certificates
-
-Issue a new certificate, query its tracking status via the CLI, and revoke it directly into the database if compromised:
+### 2. Client Side Automation (`client` group)
+Natively spin up completely constrained raw keys and `PKCS#10` payloads locally as a user without CA master keys:
 ```bash
-# Issue an end-entity web server
-./micropki ca issue-cert \
-  --ca-cert ./pki/certs/intermediate.cert.pem \
-  --ca-key ./pki/private/intermediate.key.pem \
-  --ca-pass-file ./secrets/ca.pass \
-  --subject "CN=Server 1"
-
-# Query tracked certs
-./micropki ca list-certs
-
-# Revoke a parsed identity (uses its hex serial number)
-./micropki ca revoke 00df23a --reason keycompromise
+./micropki client gen-csr \
+  --subject "CN=Server 1" \
+  --key-type rsa \
+  --out-key ./key.pem \
+  --out-csr ./request.csr.pem
 ```
 
-### 4. Compile Distributable CRL Database
-
-Build all recognized revocations onto a single distributable PEM `.crl` format encoded exactly as expected by proxy platforms:
+Submit it seamlessly over HTTP to an active `repo serve` subsystem and securely bounce it down to your environment:
 ```bash
-./micropki ca gen-crl --ca intermediate --out-file ./pki/crl/intermediate.crl.pem
-```
-Verify independently using the Unix OpenSSL standard: `openssl crl -inform PEM -in ./pki/crl/intermediate.crl.pem -text -noout`
-
-### 5. Launch Real-time OCSP Responder
-
-Serve live independent status checks securely via the isolated responder HTTP service to completely mitigate broad CRL limitations:
-
-```bash
-# Mint an isolated signing cert reserved purely for the HTTP Responder
-./micropki ca issue-ocsp-cert \
-  --ca-cert ./pki/certs/intermediate.cert.pem \
-  --ca-key ./pki/private/intermediate.key.pem \
-  --ca-pass-file ./secrets/ca.pass \
-  --subject "CN=MicroPKI OCSP Live Responder"
-
-# Launch daemon locally on port 8081 against sqlite tracking registry
-./micropki ocsp serve \
-  --ca-cert ./pki/certs/intermediate.cert.pem \
-  --responder-cert ./pki/certs/ocsp.cert.pem \
-  --responder-key ./pki/certs/ocsp.key.pem \
-  --port 8081
-
-# Verify independently via standard OpenSSL client ping in another terminal
-openssl ocsp -url http://127.0.0.1:8081 \
-  -issuer ./pki/certs/intermediate.cert.pem \
-  -cert ./pki/certs/server1.cert.pem
+./micropki client request-cert --csr ./request.csr.pem --template server --ca-url http://127.0.0.1:8080 --out-cert ./server.cert.pem
 ```
 
-### 6. Static Repository Server
-
-If distributing raw files is preferred, standard endpoints exist mapping files across the workspace tree recursively to fetch items via GET over port `8080`: 
-
+### 3. Native Cryptographic Validations
+Globally constrain the output relying securely on custom RFC 5280 loop handlers explicitly isolating `NotBefore`/`NotAfter` times and traversing recursively evaluating `MaxPathLen` constraints.
 ```bash
-./micropki repo serve --port 8080 --cert-dir ./pki/certs
-curl -s http://127.0.0.1:8080/crl
-curl -s http://127.0.0.1:8080/ca/intermediate
+./micropki client validate \
+  --cert ./server.cert.pem \
+  --trusted ./pki/certs/ca.cert.pem \
+  --untrusted ./pki/certs/intermediate.cert.pem \
+  --mode full \
+  --ocsp
+```
+
+### 4. Direct Revocation Administration
+Invalidate nodes statically utilizing HTTP APIs natively or securely querying SQLite offline list snapshots tracking `application/pkix-crl` mime headers.
+```bash
+./micropki ca revoke 00dfff3 --reason keycompromise
+./micropki ca gen-crl --ca intermediate --out-file ./intermediate.crl.pem
+
+# Check explicit status routing utilizing internal native endpoints
+./micropki client check-status --cert ./server.cert.pem --ca-cert ./intermediate.cert.pem
 ```

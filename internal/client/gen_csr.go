@@ -71,7 +71,6 @@ var genCsrCmd = &cobra.Command{
 		}
 
 		var dnsNames []string
-		var ipAddresses []string // Normally parsed via net.ParseIP
 		for _, san := range sans {
 			if strings.HasPrefix(san, "dns:") {
 				dnsNames = append(dnsNames, strings.TrimPrefix(san, "dns:"))

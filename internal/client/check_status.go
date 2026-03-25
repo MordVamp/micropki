@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"

@@ -12,9 +12,10 @@ func TestGenCSR(t *testing.T) {
 	outKey := filepath.Join(t.TempDir(), "test.key")
 	outCsr := filepath.Join(t.TempDir(), "test.csr")
 
-	cmd := genCsrCmd
-	// Override the standard args for test encapsulation
+	cmd := ClientCmd
+	// Override the standard args for test encapsulation explicitly passing the subcommand name natively
 	cmd.SetArgs([]string{
+		"gen-csr",
 		"--subject", "CN=micropki.test.com",
 		"--key-type", "rsa",
 		"--key-size", "2048",
