@@ -66,6 +66,16 @@ func InitDB(dbPath string) error {
 	);
 	CREATE INDEX IF NOT EXISTS idx_serial_hex ON certificates(serial_hex);
 	CREATE INDEX IF NOT EXISTS idx_status ON certificates(status);
+
+	CREATE TABLE IF NOT EXISTS crl_metadata (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		ca_subject TEXT NOT NULL,
+		crl_number INTEGER NOT NULL,
+		last_generated TEXT NOT NULL,
+		next_update TEXT NOT NULL,
+		crl_path TEXT NOT NULL
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_ca_subject ON crl_metadata(ca_subject);
 	`
 
 	if _, err := DB.Exec(schema); err != nil {
@@ -235,6 +245,112 @@ func CheckSerialExists(serialHex string) (bool, error) {
 
 // CreateDBIfNotExists is a helper for startup
 func CreateDBIfNotExists(dbPath string) error {
-	dir := filepath.Dir(dbPath)
 	return InitDB(dbPath)
+}
+
+type CRLMetadata struct {
+	ID            int64
+	CASubject     string
+	CRLNumber     int64
+	LastGenerated string
+	NextUpdate    string
+	CRLPath       string
+}
+
+// RevokeCertificate marks a certificate as revoked. 
+func RevokeCertificate(serialHex string, reason string) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	serialHex = strings.ToLower(serialHex)
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	query := `
+	UPDATE certificates
+	SET status = 'revoked', revocation_reason = ?, revocation_date = ?
+	WHERE LOWER(serial_hex) = ? AND status = 'valid'
+	`
+
+	res, err := DB.Exec(query, reason, now, serialHex)
+	if err != nil {
+		logger.Error("Database error during revocation: %v", err)
+		return fmt.Errorf("revoke cert: %w", err)
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("certificate %s not found or already revoked/expired", serialHex)
+	}
+
+	logger.Info("Certificate %s revoked successfully (reason: %s)", serialHex, reason)
+	return nil
+}
+
+// GetRevokedCertificates fetches all revoked certificates for a specific CA issuer.
+func GetRevokedCertificates(issuerDN string) ([]CertificateRecord, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	query := `
+	SELECT id, serial_hex, subject, issuer, not_before, not_after, cert_pem, status, revocation_reason, revocation_date, created_at
+	FROM certificates
+	WHERE LOWER(status) = 'revoked' AND issuer = ?
+	`
+	rows, err := DB.Query(query, issuerDN)
+	if err != nil {
+		return nil, fmt.Errorf("get revoked certs: %w", err)
+	}
+	defer rows.Close()
+
+	var records []CertificateRecord
+	for rows.Next() {
+		var rec CertificateRecord
+		if err := rows.Scan(&rec.ID, &rec.SerialHex, &rec.Subject, &rec.Issuer, &rec.NotBefore, &rec.NotAfter, &rec.CertPEM, &rec.Status, &rec.RevocationReason, &rec.RevocationDate, &rec.CreatedAt); err != nil {
+			return nil, err
+		}
+		records = append(records, rec)
+	}
+	return records, nil
+}
+
+// GetCRLMetadata retrieves the CRL metadata for a CA.
+func GetCRLMetadata(caSubject string) (*CRLMetadata, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	query := `SELECT id, ca_subject, crl_number, last_generated, next_update, crl_path FROM crl_metadata WHERE ca_subject = ?`
+	row := DB.QueryRow(query, caSubject)
+
+	var meta CRLMetadata
+	err := row.Scan(&meta.ID, &meta.CASubject, &meta.CRLNumber, &meta.LastGenerated, &meta.NextUpdate, &meta.CRLPath)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // not found
+		}
+		return nil, err
+	}
+	return &meta, nil
+}
+
+// UpdateCRLMetadata inserts or updates CRL metadata.
+func UpdateCRLMetadata(meta CRLMetadata) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	// upsert
+	query := `
+	INSERT INTO crl_metadata (ca_subject, crl_number, last_generated, next_update, crl_path)
+	VALUES (?, ?, ?, ?, ?)
+	ON CONFLICT(ca_subject) DO UPDATE SET
+		crl_number=excluded.crl_number,
+		last_generated=excluded.last_generated,
+		next_update=excluded.next_update,
+		crl_path=excluded.crl_path
+	`
+	_, err := DB.Exec(query, meta.CASubject, meta.CRLNumber, meta.LastGenerated, meta.NextUpdate, meta.CRLPath)
+	return err
 }

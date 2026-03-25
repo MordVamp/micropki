@@ -23,6 +23,9 @@ var repoServeCmd = &cobra.Command{
 		port, _ := cmd.Flags().GetInt("port")
 		dbPath, _ := cmd.Flags().GetString("db-path")
 		certDir, _ := cmd.Flags().GetString("cert-dir")
+		caCert, _ := cmd.Flags().GetString("ca-cert")
+		caKey, _ := cmd.Flags().GetString("ca-key")
+		caPass, _ := cmd.Flags().GetString("ca-pass-file")
 		
 		// Optionally configure log file here if supported
 		if err := logger.Init(""); err != nil {
@@ -37,10 +40,13 @@ var repoServeCmd = &cobra.Command{
 		}
 
 		server := &repository.Server{
-			Host:    host,
-			Port:    port,
-			DBPath:  dbPath,
-			CertDir: certDir,
+			Host:       host,
+			Port:       port,
+			DBPath:     dbPath,
+			CertDir:    certDir,
+			CACertPath: caCert,
+			CAKeyPath:  caKey,
+			CAPassPath: caPass,
 		}
 
 		fmt.Printf("Starting repository server on %s:%d\n", host, port)
@@ -67,6 +73,9 @@ func init() {
 	repoServeCmd.Flags().Int("port", 8080, "TCP port")
 	repoServeCmd.Flags().String("db-path", "./pki/micropki.db", "Path to SQLite database")
 	repoServeCmd.Flags().String("cert-dir", "./pki/certs", "Directory containing CA PEM certificates")
+	repoServeCmd.Flags().String("ca-cert", "./pki/certs/intermediate.cert.pem", "Path to CA internal cert for issuances")
+	repoServeCmd.Flags().String("ca-key", "./pki/private/intermediate.key.pem", "Path to CA internal key for issuances")
+	repoServeCmd.Flags().String("ca-pass-file", "./secrets/intermediate.pass", "Path to CA passkey file")
 	
 	repoCmd.AddCommand(repoServeCmd)
 	repoCmd.AddCommand(repoStatusCmd)

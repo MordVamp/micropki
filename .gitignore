@@ -1,0 +1,17 @@
+# Build outputs
+*.exe
+*.test
+*.out
+micropki
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Project specific caches and keys
+/pki/
+/secrets/
+*.log
+/go.sum

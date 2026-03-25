@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"math/big"
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
 	"micropki/internal/templates"

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"micropki/internal/database"
 	"micropki/internal/logger"
-	"os"
 
 	"github.com/spf13/cobra"
 )
