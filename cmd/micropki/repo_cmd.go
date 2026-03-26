@@ -26,6 +26,8 @@ var repoServeCmd = &cobra.Command{
 		caCert, _ := cmd.Flags().GetString("ca-cert")
 		caKey, _ := cmd.Flags().GetString("ca-key")
 		caPass, _ := cmd.Flags().GetString("ca-pass-file")
+		rateLimit, _ := cmd.Flags().GetInt("rate-limit")
+		rateBurst, _ := cmd.Flags().GetInt("rate-burst")
 		
 		// Optionally configure log file here if supported
 		if err := logger.Init(""); err != nil {
@@ -47,6 +49,8 @@ var repoServeCmd = &cobra.Command{
 			CACertPath: caCert,
 			CAKeyPath:  caKey,
 			CAPassPath: caPass,
+			RateLimit:  rateLimit,
+			RateBurst:  rateBurst,
 		}
 
 		fmt.Printf("Starting repository server on %s:%d\n", host, port)
@@ -76,6 +80,8 @@ func init() {
 	repoServeCmd.Flags().String("ca-cert", "./pki/certs/intermediate.cert.pem", "Path to CA internal cert for issuances")
 	repoServeCmd.Flags().String("ca-key", "./pki/private/intermediate.key.pem", "Path to CA internal key for issuances")
 	repoServeCmd.Flags().String("ca-pass-file", "./secrets/intermediate.pass", "Path to CA passkey file")
+	repoServeCmd.Flags().Int("rate-limit", 0, "Requests per second limit (0 to disable)")
+	repoServeCmd.Flags().Int("rate-burst", 10, "Burst tolerance for rate limiting")
 	
 	repoCmd.AddCommand(repoServeCmd)
 	repoCmd.AddCommand(repoStatusCmd)

@@ -12,6 +12,7 @@ import (
 
 	"micropki/internal/database"
 	"micropki/internal/logger"
+	"micropki/internal/ratelimit"
 )
 
 // Server holds the repository server state
@@ -23,6 +24,8 @@ type Server struct {
 	CACertPath string
 	CAKeyPath  string
 	CAPassPath string
+	RateLimit  int
+	RateBurst  int
 }
 
 // loggingMiddleware logs the incoming HTTP requests
@@ -64,6 +67,7 @@ func (s *Server) Start() error {
 
 	// Apply middleware
 	handler := corsMiddleware(loggingMiddleware(mux))
+	handler = ratelimit.Middleware(float64(s.RateLimit), s.RateBurst, handler)
 
 	logger.Info("Starting repository server on http://%s", addr)
 	

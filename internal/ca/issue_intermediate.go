@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"micropki/internal/audit"
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
 	"micropki/internal/policy"
@@ -194,6 +195,28 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("SKI computation failed: %w", err)
 	}
 
+	// Policy enforce: Validity
+	if err := policy.ValidateValidity(interValidityDays, "intermediate"); err != nil {
+		logger.Error("Policy violation (Validity): %v", err)
+		audit.LogEvent("AUDIT", "issue_intermediate", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
+	// Policy enforce: Key limits
+	if err := policy.ValidateKey(interPubKey, "intermediate"); err != nil {
+		logger.Error("Policy violation (Key Size): %v", err)
+		audit.LogEvent("AUDIT", "issue_intermediate", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+	
+	// Policy enforce: PathLength
+	if interPathLen > 0 {
+		errStr := "Path Length constraint > 0 is forbidden by default policy"
+		logger.Error("%s", errStr)
+		audit.LogEvent("AUDIT", "issue_intermediate", "failure", errStr, map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %s", errStr)
+	}
+
 	// Build certificate template for Intermediate CA
 	now := time.Now().UTC()
 	template := &x509.Certificate{
@@ -268,6 +291,15 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		logger.Error("Database insertion failed: %v", err)
 		return fmt.Errorf("database insertion failed: %w", err)
 	}
+
+	h := crypto.SHA256.New()
+	h.Write(certDER)
+	fingerprint := fmt.Sprintf("%x", h.Sum(nil))
+	audit.LogEvent("AUDIT", "issue_intermediate", "success", "Issued Intermediate CA certificate", map[string]interface{}{
+		"serial":   fmt.Sprintf("%x", serial),
+		"subject":  subjectName.String(),
+	})
+	audit.AppendCTLog(fmt.Sprintf("%x", serial), subjectName.String(), fingerprint, rootCert.Subject.String())
 
 	// Optionally save CSR for audit
 	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})

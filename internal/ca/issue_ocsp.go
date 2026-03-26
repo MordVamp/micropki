@@ -1,6 +1,7 @@
 package ca
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"micropki/internal/audit"
+	"micropki/internal/policy"
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/database"
 	"micropki/internal/logger"
@@ -110,6 +113,20 @@ func runIssueOcsp(cmd *cobra.Command, args []string) error {
 	}
 	pubKey := &priv.PublicKey
 
+	// Policy enforce: Validity
+	if err := policy.ValidateValidity(ocspValidityDays, "end-entity"); err != nil {
+		logger.Error("Policy violation (Validity): %v", err)
+		audit.LogEvent("AUDIT", "issue_ocsp", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
+	// Policy enforce: Key limits
+	if err := policy.ValidateKey(pubKey, "end-entity"); err != nil {
+		logger.Error("Policy violation (Key Size): %v", err)
+		audit.LogEvent("AUDIT", "issue_ocsp", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
 	ski, _ := internalcrypto.ComputeSKI(pubKey)
 
 	now := time.Now().UTC()
@@ -158,6 +175,15 @@ func runIssueOcsp(cmd *cobra.Command, args []string) error {
 	logger.Warning("OCSP private key is stored unencrypted at %s", keyPath)
 
 	database.InsertCertificate(serial, tmpl.Subject.String(), caCert.Subject.String(), tmpl.NotBefore, tmpl.NotAfter, certPEM)
+
+	h := crypto.SHA256.New()
+	h.Write(certDER)
+	fingerprint := fmt.Sprintf("%x", h.Sum(nil))
+	audit.LogEvent("AUDIT", "issue_ocsp", "success", "Issued OCSP certificate", map[string]interface{}{
+		"serial":  fmt.Sprintf("%x", serial),
+		"subject": tmpl.Subject.String(),
+	})
+	audit.AppendCTLog(fmt.Sprintf("%x", serial), tmpl.Subject.String(), fingerprint, caCert.Subject.String())
 
 	fmt.Printf("OCSP responder certificate issued:\nCert: %s\nKey:  %s\n", certPath, keyPath)
 	return nil

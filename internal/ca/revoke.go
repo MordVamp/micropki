@@ -2,6 +2,7 @@ package ca
 
 import (
 	"fmt"
+	"micropki/internal/audit"
 	"micropki/internal/database"
 	"micropki/internal/logger"
 	"strings"
@@ -46,8 +47,14 @@ var revokeCmd = &cobra.Command{
 				fmt.Println("Certificate already revoked or missing. No action taken.")
 				return nil
 			}
+			audit.LogEvent("AUDIT", "revoke_certificate", "failure", err.Error(), map[string]interface{}{"serial": serial, "reason": reason})
 			return fmt.Errorf("revocation failed: %w", err)
 		}
+
+		audit.LogEvent("AUDIT", "revoke_certificate", "success", "Certificate revoked", map[string]interface{}{
+			"serial": serial,
+			"reason": reason,
+		})
 
 		fmt.Printf("Certificate %s successfully revoked (reason: %s).\n", serial, reason)
 		return nil

@@ -76,6 +76,15 @@ func InitDB(dbPath string) error {
 		crl_path TEXT NOT NULL
 	);
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_ca_subject ON crl_metadata(ca_subject);
+
+	CREATE TABLE IF NOT EXISTS compromised_keys (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		public_key_hash TEXT UNIQUE NOT NULL,
+		certificate_serial TEXT NOT NULL,
+		compromise_date TEXT NOT NULL,
+		compromise_reason TEXT NOT NULL,
+		FOREIGN KEY (certificate_serial) REFERENCES certificates(serial_hex)
+	);
 	`
 
 	if _, err := DB.Exec(schema); err != nil {
@@ -353,4 +362,34 @@ func UpdateCRLMetadata(meta CRLMetadata) error {
 	`
 	_, err := DB.Exec(query, meta.CASubject, meta.CRLNumber, meta.LastGenerated, meta.NextUpdate, meta.CRLPath)
 	return err
+}
+
+// MarkKeyCompromised marks a public key hash as compromised.
+func MarkKeyCompromised(pubKeyHash, serialHex, date, reason string) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	query := `
+	INSERT INTO compromised_keys (public_key_hash, certificate_serial, compromise_date, compromise_reason)
+	VALUES (?, ?, ?, ?)
+	ON CONFLICT(public_key_hash) DO NOTHING
+	`
+	_, err := DB.Exec(query, strings.ToLower(pubKeyHash), strings.ToLower(serialHex), date, reason)
+	return err
+}
+
+// IsKeyCompromised checks if a public key hash is compromised.
+func IsKeyCompromised(pubKeyHash string) (bool, error) {
+	if DB == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+
+	var count int
+	query := `SELECT COUNT(*) FROM compromised_keys WHERE LOWER(public_key_hash) = ?`
+	err := DB.QueryRow(query, strings.ToLower(pubKeyHash)).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

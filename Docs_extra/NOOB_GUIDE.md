@@ -144,3 +144,23 @@ OCSP checks certificates individually via sub-millisecond API hooks natively dyn
 ```
 
 Finally, anyone intelligently checking validation now using `--ocsp` natively on `client validate` or `client check-status` will see the explicit rejection logic! You've mastered PKI!
+
+---
+
+## 4. Fully Automated Demos and Benchmarks
+
+If you don't want to type everything manually, we've provided automated scripts that do it all for you!
+
+### Complete Architecture Run (`demo.sh`)
+This script executes the entire MicroPKI suite from Sprints 1-8 automatically: initializing the database, creating the Root/Intermediate CAs, running the Repository and OCSP HTTP servers in the background, issuing server/client keys, simulating code signing, revoking malicious certificates, and verifying the cryptographically-linked audit hash chains!
+```bash
+chmod +x ./demo.sh
+./demo.sh
+```
+
+### High-Volume Performance Testing (`perf_test.sh`)
+Want to see how fast MicroPKI is? Execute the benchmarking tool to automatically generate 1,000 unique distinct keys, CSRs, and signed certificates natively hitting the SQLite database.
+```bash
+chmod +x ./perf_test.sh
+./perf_test.sh
+```

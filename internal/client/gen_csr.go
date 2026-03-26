@@ -73,7 +73,11 @@ var genCsrCmd = &cobra.Command{
 		var dnsNames []string
 		for _, san := range sans {
 			if strings.HasPrefix(san, "dns:") {
-				dnsNames = append(dnsNames, strings.TrimPrefix(san, "dns:"))
+				dns := strings.TrimPrefix(san, "dns:")
+				if strings.HasPrefix(dns, "*.") {
+					return fmt.Errorf("wildcard certificates (*.domain) are forbidden by policy")
+				}
+				dnsNames = append(dnsNames, dns)
 			}
 		}
 

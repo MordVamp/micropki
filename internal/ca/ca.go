@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"micropki/internal/audit"
 	"micropki/internal/certs"
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
@@ -102,6 +103,14 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	logger.Info("Generating %s key (%d bits)", initKeyType, initKeySize)
+
+	// Policy Enforce: Validity
+	if err := policy.ValidateValidity(initValidityDays, "root"); err != nil {
+		logger.Error("Policy violation (Validity): %v", err)
+		audit.LogEvent("AUDIT", "ca_init", "failure", err.Error(), map[string]interface{}{"subject": initSubject})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
 	var privKey crypto.PrivateKey
 	var pubKey crypto.PublicKey
 	switch initKeyType {
@@ -125,6 +134,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unsupported key type")
 	}
 	logger.Info("Key generation completed")
+
+	// Policy Enforce: Key limits
+	if err := policy.ValidateKey(pubKey, "root"); err != nil {
+		logger.Error("Policy violation (Key Size): %v", err)
+		audit.LogEvent("AUDIT", "ca_init", "failure", err.Error(), map[string]interface{}{"subject": initSubject})
+		return fmt.Errorf("policy violation: %w", err)
+	}
 
 	serialBytes := make([]byte, 20)
 	if _, err := rand.Read(serialBytes); err != nil {
@@ -170,6 +186,10 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("policy creation failed: %w", err)
 	}
 	logger.Info("Policy document created")
+
+	audit.LogEvent("AUDIT", "ca_init", "success", "Root CA initialized", map[string]interface{}{
+		"subject": initSubject,
+	})
 
 	logger.Info("Root CA initialization completed successfully")
 	fmt.Printf("Root CA successfully created in %s\n", initOutDir)

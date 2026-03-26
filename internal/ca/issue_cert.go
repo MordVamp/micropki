@@ -10,6 +10,8 @@ import (
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
 	"micropki/internal/templates"
+	"micropki/internal/policy"
+	"micropki/internal/audit"
 	"os"
 	"path/filepath"
 	"strings"
@@ -217,6 +219,42 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 		logger.Info("End-entity key generated")
 	}
 
+	// Policy enforce: Validity
+	if err := policy.ValidateValidity(certValidityDays, "end-entity"); err != nil {
+		logger.Error("Policy violation (Validity): %v", err)
+		audit.LogEvent("AUDIT", "issue_certificate", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
+	// Policy enforce: SANs
+	if err := policy.ValidateSANs(tmpl.DNSNames, tmpl.EmailAddresses, tmpl.IPAddresses, tmpl.URIs, certTemplate); err != nil {
+		logger.Error("Policy violation (SANs): %v", err)
+		audit.LogEvent("AUDIT", "issue_certificate", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
+	// Policy enforce: Key limits
+	if err := policy.ValidateKey(pubKey, "end-entity"); err != nil {
+		logger.Error("Policy violation (Key Size): %v", err)
+		audit.LogEvent("AUDIT", "issue_certificate", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
+		return fmt.Errorf("policy violation: %w", err)
+	}
+
+	// Check if key is compromised
+	pubKeyBytes, err := x509.MarshalPKIXPublicKey(pubKey)
+	if err == nil {
+		h := crypto.SHA256.New()
+		h.Write(pubKeyBytes)
+		pubKeyHash := fmt.Sprintf("%x", h.Sum(nil))
+		isCompromised, _ := database.IsKeyCompromised(pubKeyHash)
+		if isCompromised {
+			errStr := "Public key is associated with a compromised private key"
+			logger.Error("%s", errStr)
+			audit.LogEvent("AUDIT", "issue_certificate", "failure", errStr, map[string]interface{}{"subject": subjectName.String()})
+			return fmt.Errorf("policy violation: %s", errStr)
+		}
+	}
+
 	// Compute SKI for the end-entity public key (optional, not required for leaf certs but can be included)
 	// We'll compute and add to template if desired; not required by RFC for leaf certs.
 	ski, err := internalcrypto.ComputeSKI(pubKey)
@@ -280,6 +318,16 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 		// Usually we'd rollback file creation if this was fully atomic, but we'll return an error.
 		return fmt.Errorf("database insertion failed: %w", err)
 	}
+
+	h := crypto.SHA256.New()
+	h.Write(certDER)
+	fingerprint := fmt.Sprintf("%x", h.Sum(nil))
+	audit.LogEvent("AUDIT", "issue_certificate", "success", "Issued end-entity certificate", map[string]interface{}{
+		"serial":   fmt.Sprintf("%x", serial),
+		"subject":  tmpl.Subject.String(),
+		"template": certTemplate,
+	})
+	audit.AppendCTLog(fmt.Sprintf("%x", serial), tmpl.Subject.String(), fingerprint, caCert.Subject.String())
 
 	logger.Info("Certificate issuance completed successfully")
 	fmt.Printf("Certificate issued: %s\n", certPath)
