@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -227,6 +228,20 @@ func (s *Server) handleRequestCert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var csrBytes []byte
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+		var req struct {
+			CSR string `json:"csr"`
+		}
+		if err := json.Unmarshal(body, &req); err != nil {
+			http.Error(w, "invalid JSON payload", http.StatusBadRequest)
+			return
+		}
+		csrBytes = []byte(req.CSR)
+	} else {
+		csrBytes = body
+	}
+
 	tmpFile, err := os.CreateTemp("", "csr-*.pem")
 	if err != nil {
 		http.Error(w, "internal config error", http.StatusInternalServerError)
@@ -234,7 +249,7 @@ func (s *Server) handleRequestCert(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.Remove(tmpFile.Name())
 
-	if _, err := tmpFile.Write(body); err != nil {
+	if _, err := tmpFile.Write(csrBytes); err != nil {
 		http.Error(w, "internal write error", http.StatusInternalServerError)
 		return
 	}

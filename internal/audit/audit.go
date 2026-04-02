@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -19,6 +21,7 @@ var (
 	mu         sync.Mutex
 	isInit     bool
 	zeroHash   string = "0000000000000000000000000000000000000000000000000000000000000000"
+	auditLogWriter *lumberjack.Logger
 )
 
 type Integrity struct {
@@ -56,13 +59,13 @@ func Init(baseDir string) error {
 		}
 	}
 	
-	// Create audit.log if missing
-	if _, err := os.Stat(auditLog); os.IsNotExist(err) {
-		f, err := os.Create(auditLog)
-		if err != nil {
-			return err
-		}
-		f.Close()
+	// Create audit.log rotation writer
+	auditLogWriter = &lumberjack.Logger{
+		Filename:   auditLog,
+		MaxSize:    10, // megabytes
+		MaxBackups: 5,
+		MaxAge:     30, // days
+		Compress:   true, 
 	}
 
 	// Create ct.log if missing
@@ -142,14 +145,8 @@ func LogEvent(level, operation, status, message string, metadata map[string]inte
 	}
 	finalJSON = append(finalJSON, '\n')
 
-	// Append to log
-	f, err := os.OpenFile(auditLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.Write(finalJSON); err != nil {
+	// Append to log using rotating writer
+	if _, err := auditLogWriter.Write(finalJSON); err != nil {
 		return err
 	}
 

@@ -16,6 +16,7 @@ import (
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
 	"micropki/internal/policy"
+	"micropki/internal/utils"
 
 	"micropki/internal/database"
 	pkgserial "micropki/internal/serial"
@@ -46,6 +47,9 @@ var (
 	interPathLen        int
 	interLogFile        string
 	interDbPath         string
+	interForce          bool
+	interPermittedDNS   []string
+	interExcludedDNS    []string
 )
 
 func init() {
@@ -62,6 +66,9 @@ func init() {
 	flags.IntVar(&interPathLen, "pathlen", 0, "Path length constraint (default 0)")
 	flags.StringVar(&interLogFile, "log-file", "", "Log file path (default: stderr)")
 	flags.StringVar(&interDbPath, "db-path", "./pki/micropki.db", "SQLite database path")
+	flags.BoolVarP(&interForce, "force", "f", false, "Overwrite existing files without confirmation")
+	flags.StringSliceVar(&interPermittedDNS, "permitted-dns", nil, "Permitted DNS domains for Name Constraints")
+	flags.StringSliceVar(&interExcludedDNS, "excluded-dns", nil, "Excluded DNS domains for Name Constraints")
 
 	cobra.MarkFlagRequired(flags, "root-cert")
 	cobra.MarkFlagRequired(flags, "root-key")
@@ -233,6 +240,9 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		MaxPathLen:            interPathLen,
 		MaxPathLenZero:        interPathLen == 0, // important to set zero correctly
 
+		PermittedDNSDomains:   interPermittedDNS,
+		ExcludedDNSDomains:    interExcludedDNS,
+
 		SubjectKeyId: ski,
 
 		// Extensions can be added here, but we already set KeyUsage and BasicConstraints.
@@ -272,7 +282,7 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("key encryption failed: %w", err)
 	}
 	keyPath := filepath.Join(privateDir, "intermediate.key.pem")
-	if err := os.WriteFile(keyPath, encryptedKey, 0600); err != nil {
+	if err := utils.SafeWriteFile(keyPath, encryptedKey, 0600, interForce); err != nil {
 		logger.Error("Failed to write intermediate private key: %v", err)
 		return fmt.Errorf("cannot write private key: %w", err)
 	}
@@ -280,7 +290,7 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 
 	// Save intermediate certificate
 	certPath := filepath.Join(certsDir, "intermediate.cert.pem")
-	if err := os.WriteFile(certPath, certPEM, 0644); err != nil {
+	if err := utils.SafeWriteFile(certPath, certPEM, 0644, interForce); err != nil {
 		logger.Error("Failed to write intermediate certificate: %v", err)
 		return fmt.Errorf("cannot write certificate: %w", err)
 	}
@@ -304,7 +314,7 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 	// Optionally save CSR for audit
 	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
 	csrPath := filepath.Join(csrDir, "intermediate.csr.pem")
-	if err := os.WriteFile(csrPath, csrPEM, 0644); err != nil {
+	if err := utils.SafeWriteFile(csrPath, csrPEM, 0644, interForce); err != nil {
 		logger.Warning("Failed to write CSR: %v", err) // non-critical
 	} else {
 		logger.Info("CSR saved to %s", csrPath)

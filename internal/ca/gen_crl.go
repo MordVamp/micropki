@@ -13,6 +13,7 @@ import (
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/database"
 	"micropki/internal/logger"
+	"micropki/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -26,6 +27,7 @@ var genCrlCmd = &cobra.Command{
 		outFile, _ := cmd.Flags().GetString("out-file")
 		dbPath, _ := cmd.Flags().GetString("db-path")
 		passphraseFile, _ := cmd.Flags().GetString("passphrase-file")
+		force, _ := cmd.Flags().GetBool("force")
 
 		if err := logger.Init(""); err != nil {
 			return err
@@ -107,7 +109,7 @@ var genCrlCmd = &cobra.Command{
 			return fmt.Errorf("failed to create crl directory: %w", err)
 		}
 
-		if err := os.WriteFile(outFile, crlPEM, 0644); err != nil {
+		if err := utils.SafeWriteFile(outFile, crlPEM, 0644, force); err != nil {
 			return fmt.Errorf("failed to write CRL file: %w", err)
 		}
 
@@ -129,6 +131,7 @@ func init() {
 	genCrlCmd.Flags().String("out-file", "", "Output file path")
 	genCrlCmd.Flags().String("db-path", "./pki/micropki.db", "SQLite DB path")
 	genCrlCmd.Flags().String("passphrase-file", "./secrets/intermediate.pass", "File containing passphrase for CA key") // Example default
+	genCrlCmd.Flags().BoolP("force", "f", false, "Overwrite existing files without confirmation")
 
 	CaCmd.AddCommand(genCrlCmd)
 }

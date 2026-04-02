@@ -7,11 +7,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"micropki/internal/audit"
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
-	"micropki/internal/templates"
 	"micropki/internal/policy"
-	"micropki/internal/audit"
+	"micropki/internal/templates"
+	"micropki/internal/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,7 @@ var (
 	certValidityDays int
 	certLogFile      string
 	certDbPath       string
+	certForce        bool
 )
 
 func init() {
@@ -58,6 +60,7 @@ func init() {
 	flags.IntVar(&certValidityDays, "validity-days", 365, "Validity period in days")
 	flags.StringVar(&certLogFile, "log-file", "", "Log file path (default: stderr)")
 	flags.StringVar(&certDbPath, "db-path", "./pki/micropki.db", "SQLite database path")
+	flags.BoolVarP(&certForce, "force", "f", false, "Overwrite existing files without confirmation")
 
 	cobra.MarkFlagRequired(flags, "ca-cert")
 	cobra.MarkFlagRequired(flags, "ca-key")
@@ -191,17 +194,12 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 		// We'll also extract SANs from CSR if present and add them to the template.
 		// Let's extract SANs from CSR:
 		//sanExtFound := false
-		for _, ext := range csr.Extensions {
-			if ext.Id.Equal([]int{2, 5, 29, 17}) { // id-ce-subjectAltName
-				// Parse SANs from extension
-				// We could use x509.ParseSANs but that's for certificates, not CSR. We'll need to parse manually.
-				// Too complex for now. We'll skip and just use the CSR's subject.
-				// For simplicity, we'll just use the CSR's public key and subject, and ignore SANs entirely.
-				// The user can provide SANs via CLI.
-				break
-			}
-		}
-		// For now, we'll just use the CSR's public key and subject, and rely on CLI SANs.
+		// We'll extract SANs from CSR if they are present
+		tmpl.DNSNames = append(tmpl.DNSNames, csr.DNSNames...)
+		tmpl.EmailAddresses = append(tmpl.EmailAddresses, csr.EmailAddresses...)
+		tmpl.IPAddresses = append(tmpl.IPAddresses, csr.IPAddresses...)
+		tmpl.URIs = append(tmpl.URIs, csr.URIs...)
+
 		pubKey = csr.PublicKey
 		// Override subject with CSR's subject
 		tmpl.Subject = csr.Subject
@@ -289,7 +287,7 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 
 	// Save certificate
 	certPath := filepath.Join(certOutDir, certFileName)
-	if err := os.WriteFile(certPath, certPEM, 0644); err != nil {
+	if err := utils.SafeWriteFile(certPath, certPEM, 0644, certForce); err != nil {
 		logger.Error("Failed to write certificate: %v", err)
 		return fmt.Errorf("cannot write certificate: %w", err)
 	}
@@ -304,7 +302,7 @@ func runIssueCert(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("key marshaling failed: %w", err)
 		}
 		keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
-		if err := os.WriteFile(keyPath, keyPEM, 0600); err != nil {
+		if err := utils.SafeWriteFile(keyPath, keyPEM, 0600, certForce); err != nil {
 			logger.Error("Failed to write private key: %v", err)
 			return fmt.Errorf("cannot write private key: %w", err)
 		}

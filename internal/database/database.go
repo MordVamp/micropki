@@ -350,17 +350,20 @@ func UpdateCRLMetadata(meta CRLMetadata) error {
 		return fmt.Errorf("database not initialized")
 	}
 
-	// upsert
-	query := `
-	INSERT INTO crl_metadata (ca_subject, crl_number, last_generated, next_update, crl_path)
-	VALUES (?, ?, ?, ?, ?)
-	ON CONFLICT(ca_subject) DO UPDATE SET
-		crl_number=excluded.crl_number,
-		last_generated=excluded.last_generated,
-		next_update=excluded.next_update,
-		crl_path=excluded.crl_path
-	`
-	_, err := DB.Exec(query, meta.CASubject, meta.CRLNumber, meta.LastGenerated, meta.NextUpdate, meta.CRLPath)
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM crl_metadata WHERE ca_subject = ?", meta.CASubject).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		query := `UPDATE crl_metadata SET crl_number=?, last_generated=?, next_update=?, crl_path=? WHERE ca_subject=?`
+		_, err = DB.Exec(query, meta.CRLNumber, meta.LastGenerated, meta.NextUpdate, meta.CRLPath, meta.CASubject)
+		return err
+	}
+
+	query := `INSERT INTO crl_metadata (ca_subject, crl_number, last_generated, next_update, crl_path) VALUES (?, ?, ?, ?, ?)`
+	_, err = DB.Exec(query, meta.CASubject, meta.CRLNumber, meta.LastGenerated, meta.NextUpdate, meta.CRLPath)
 	return err
 }
 

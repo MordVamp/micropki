@@ -90,22 +90,22 @@ func ValidateKey(pub crypto.PublicKey, role string) error {
 	switch k := pub.(type) {
 	case *rsa.PublicKey:
 		size := k.Size() * 8
-		if role == "root" && size < 4096 {
-			return fmt.Errorf("root RSA key must be >= 4096 bits")
+		if role == "root" && size < CurrentConfig.Keys.RSARootMinBits {
+			return fmt.Errorf("root RSA key must be >= %d bits", CurrentConfig.Keys.RSARootMinBits)
 		}
-		if role == "intermediate" && size < 3072 {
-			return fmt.Errorf("intermediate RSA key must be >= 3072 bits")
+		if role == "intermediate" && size < CurrentConfig.Keys.RSAIntermediateMinBits {
+			return fmt.Errorf("intermediate RSA key must be >= %d bits", CurrentConfig.Keys.RSAIntermediateMinBits)
 		}
-		if role == "end-entity" && size < 2048 {
-			return fmt.Errorf("RSA key must be >= 2048 bits")
+		if role == "end-entity" && size < CurrentConfig.Keys.RSAEndEntityMinBits {
+			return fmt.Errorf("RSA key must be >= %d bits", CurrentConfig.Keys.RSAEndEntityMinBits)
 		}
 	case *ecdsa.PublicKey:
 		size := k.Params().BitSize
-		if (role == "root" || role == "intermediate") && size < 384 {
-			return fmt.Errorf("CA ECC key must be >= P-384")
+		if (role == "root" || role == "intermediate") && size < CurrentConfig.Keys.ECCCAMinSize {
+			return fmt.Errorf("CA ECC key must be >= P-%d", CurrentConfig.Keys.ECCCAMinSize)
 		}
-		if role == "end-entity" && size < 256 {
-			return fmt.Errorf("ECC key must be >= P-256")
+		if role == "end-entity" && size < CurrentConfig.Keys.ECCEndEntityMinSize {
+			return fmt.Errorf("ECC key must be >= P-%d", CurrentConfig.Keys.ECCEndEntityMinSize)
 		}
 	default:
 		return fmt.Errorf("unsupported public key type")
@@ -115,14 +115,14 @@ func ValidateKey(pub crypto.PublicKey, role string) error {
 
 // ValidateValidity period rules
 func ValidateValidity(days int, role string) error {
-	if role == "root" && days > 3650 {
-		return fmt.Errorf("root validity exceeds max 3650 days")
+	if role == "root" && days > CurrentConfig.Validity.RootMaxDays {
+		return fmt.Errorf("root validity exceeds max %d days", CurrentConfig.Validity.RootMaxDays)
 	}
-	if role == "intermediate" && days > 1825 {
-		return fmt.Errorf("intermediate validity exceeds max 1825 days")
+	if role == "intermediate" && days > CurrentConfig.Validity.IntermediateMaxDays {
+		return fmt.Errorf("intermediate validity exceeds max %d days", CurrentConfig.Validity.IntermediateMaxDays)
 	}
-	if role == "end-entity" && days > 365 {
-		return fmt.Errorf("end-entity validity exceeds max 365 days")
+	if role == "end-entity" && days > CurrentConfig.Validity.EndEntityMaxDays {
+		return fmt.Errorf("end-entity validity exceeds max %d days", CurrentConfig.Validity.EndEntityMaxDays)
 	}
 	return nil
 }

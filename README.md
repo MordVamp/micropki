@@ -1,5 +1,6 @@
 # MicroPKI - A Minimal Public Key Infrastructure
 
+![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)
 MicroPKI is a Go-based PKI suite demonstrating core functionalities like Root CA generation, intermediate CAs, end-entity certificate issuance, revocation (CRL), real-time status tracking (OCSP) and custom path-validation Client workflows! It integrates with a backend SQLite registry for deterministic ledger keeping and implements robust cryptographic audit tracking.
 
 ## Architecture & Security Enforcement (Sprints 7-8)

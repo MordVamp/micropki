@@ -15,6 +15,7 @@ import (
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/logger"
 	"micropki/internal/policy"
+	"micropki/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -50,6 +51,7 @@ var (
 	initOutDir         string
 	initValidityDays   int
 	initLogFile        string
+	initForce          bool
 )
 
 func init() {
@@ -61,6 +63,7 @@ func init() {
 	flags.StringVar(&initOutDir, "out-dir", "./pki", "Output directory")
 	flags.IntVar(&initValidityDays, "validity-days", 3650, "Validity period in days")
 	flags.StringVar(&initLogFile, "log-file", "", "Log file path (default: stderr)")
+	flags.BoolVarP(&initForce, "force", "f", false, "Overwrite existing files without confirmation")
 
 	cobra.MarkFlagRequired(flags, "subject")
 	cobra.MarkFlagRequired(flags, "passphrase-file")
@@ -165,7 +168,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		logger.Error("Key encryption failed: %v", err)
 		return fmt.Errorf("key encryption failed: %w", err)
 	}
-	if err := os.WriteFile(keyPath, encryptedKey, 0600); err != nil {
+	if err := utils.SafeWriteFile(keyPath, encryptedKey, 0600, initForce); err != nil {
 		logger.Error("Failed to write private key: %v", err)
 		return fmt.Errorf("cannot write private key: %w", err)
 	}
@@ -173,7 +176,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	certPath := filepath.Join(certsDir, "ca.cert.pem")
 	logger.Info("Saving certificate to %s", certPath)
-	if err := os.WriteFile(certPath, certPEM, 0644); err != nil {
+	if err := utils.SafeWriteFile(certPath, certPEM, 0644, initForce); err != nil {
 		logger.Error("Failed to write certificate: %v", err)
 		return fmt.Errorf("cannot write certificate: %w", err)
 	}
