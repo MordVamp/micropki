@@ -215,11 +215,11 @@ func validateInitArgs() error {
 	if initKeyType != "rsa" && initKeyType != "ecc" {
 		return fmt.Errorf("key-type must be 'rsa' or 'ecc'")
 	}
-	if initKeyType == "rsa" && initKeySize != 4096 {
-		return fmt.Errorf("RSA key size must be 4096")
+	if initKeyType == "rsa" && initKeySize < policy.CurrentConfig.Keys.RSARootMinBits {
+		return fmt.Errorf("RSA key size must be >= %d", policy.CurrentConfig.Keys.RSARootMinBits)
 	}
-	if initKeyType == "ecc" && initKeySize != 384 {
-		return fmt.Errorf("ECC key size must be 384")
+	if initKeyType == "ecc" && initKeySize < policy.CurrentConfig.Keys.ECCCAMinSize {
+		return fmt.Errorf("ECC key size must be >= %d", policy.CurrentConfig.Keys.ECCCAMinSize)
 	}
 	if initValidityDays <= 0 {
 		return fmt.Errorf("validity-days must be positive")
