@@ -50,6 +50,7 @@ var (
 	interForce          bool
 	interPermittedDNS   []string
 	interExcludedDNS    []string
+	interUSBPath        string
 )
 
 func init() {
@@ -69,9 +70,9 @@ func init() {
 	flags.BoolVarP(&interForce, "force", "f", false, "Overwrite existing files without confirmation")
 	flags.StringSliceVar(&interPermittedDNS, "permitted-dns", nil, "Permitted DNS domains for Name Constraints")
 	flags.StringSliceVar(&interExcludedDNS, "excluded-dns", nil, "Excluded DNS domains for Name Constraints")
+	flags.StringVar(&interUSBPath, "usb-path", "", "Path to USB drive containing Root CA key (optional)")
 
 	cobra.MarkFlagRequired(flags, "root-cert")
-	cobra.MarkFlagRequired(flags, "root-key")
 	cobra.MarkFlagRequired(flags, "root-pass-file")
 	cobra.MarkFlagRequired(flags, "subject")
 	cobra.MarkFlagRequired(flags, "passphrase-file")
@@ -115,7 +116,16 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 	logger.Info("Root CA certificate loaded: %s", rootCert.Subject)
 
 	// Load Root CA private key (encrypted)
-	rootKeyPEM, err := os.ReadFile(interRootKey)
+	keyFileToRead := interRootKey
+	if interUSBPath != "" {
+		keyFileToRead = filepath.Join(interUSBPath, "ca.key.pem")
+		if _, err := os.Stat(keyFileToRead); os.IsNotExist(err) {
+			logger.Error("USB path %s does not contain ca.key.pem. Please insert the USB drive.", interUSBPath)
+			return fmt.Errorf("root key not found on USB: %w", err)
+		}
+	}
+
+	rootKeyPEM, err := os.ReadFile(keyFileToRead)
 	if err != nil {
 		logger.Error("Failed to read root key: %v", err)
 		return fmt.Errorf("cannot read root key: %w", err)
@@ -358,8 +368,10 @@ func validateIssueIntermediateArgs() error {
 	if _, err := os.Stat(interRootCert); err != nil {
 		return fmt.Errorf("root certificate file issue: %w", err)
 	}
-	if _, err := os.Stat(interRootKey); err != nil {
-		return fmt.Errorf("root key file issue: %w", err)
+	if interUSBPath == "" {
+		if _, err := os.Stat(interRootKey); err != nil {
+			return fmt.Errorf("root key file issue: %w", err)
+		}
 	}
 	if _, err := os.Stat(interRootPassFile); err != nil {
 		return fmt.Errorf("root passphrase file issue: %w", err)

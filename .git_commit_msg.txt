@@ -1,0 +1,26 @@
+feat(sprint-8): finalize high-security PKI architecture and Sprint 8 deliverables
+
+This massive update brings the MicroPKI project into full compliance with
+advanced security specifications and Sprint 8 requirements, ensuring the
+system is ready for defense and demonstration.
+
+Security & Architecture Hardening:
+- Root CA Storage: Replaced AES-CBC with PBKDF2 + ChaCha20-Poly1305.
+- Volatile Memory: Implemented explicit memory `Zeroize` for private keys.
+- Physical Isolation: Added `--usb-path` for offline Root CA key storage.
+- Non-Repudiation: Integrated HMAC signatures into the Hash-chain audit log.
+- Network Resilience: Replaced HTTP rate limiting with TCP-level HTB (Hierarchical Token Bucket).
+- Instance Isolation: Separated Root CA and Intermediate CA directories and DBs.
+
+Testing & Distribution:
+- Test Suite: Fixed outdated crypto tests and resolved dependency issues. All tests passing.
+- Linux Distribution: Created `build_dist.sh` and a self-contained `install.sh` for easy deployment on Ubuntu test environments.
+
+Documentation & Demonstration:
+- Updated `demo.sh` to include real TLS HTTPS demonstrations, CRL revocation verification, and Policy Engine enforcement (weak key rejection).
+- Wrote detailed CLI documentation (`Docs_extra/cli_commands.md`).
+- Wrote step-by-step demo guide (`Docs_extra/demo_guide.md`).
+- Extracted REST API endpoints into `Docs_extra/api_reference.md`.
+- Expanded `README.md` with prerequisites and explicitly required security limitations/disclaimers.
+- Added MIT `LICENSE`.
+- Ignored requirement `sprints/` folder in `.gitignore`.

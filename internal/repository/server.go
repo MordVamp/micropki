@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"net"
 
 	"micropki/internal/database"
 	"micropki/internal/logger"
@@ -77,7 +78,15 @@ func (s *Server) Start() error {
 		Handler: handler,
 	}
 
-	return srv.ListenAndServe()
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	// Apply TCP-level HTB Rate Limiting
+	limitedListener := ratelimit.LimitListener(listener, float64(s.RateLimit), s.RateBurst)
+
+	return srv.Serve(limitedListener)
 }
 
 // corsMiddleware adds the Access-Control-Allow-Origin header

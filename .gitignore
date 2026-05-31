@@ -15,3 +15,6 @@ micropki
 /secrets/
 *.log
 /go.sum
+
+# Temporary Sprints Docs
+/sprints/

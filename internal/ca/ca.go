@@ -52,6 +52,7 @@ var (
 	initValidityDays   int
 	initLogFile        string
 	initForce          bool
+	initUSBPath        string
 )
 
 func init() {
@@ -64,6 +65,7 @@ func init() {
 	flags.IntVar(&initValidityDays, "validity-days", 3650, "Validity period in days")
 	flags.StringVar(&initLogFile, "log-file", "", "Log file path (default: stderr)")
 	flags.BoolVarP(&initForce, "force", "f", false, "Overwrite existing files without confirmation")
+	flags.StringVar(&initUSBPath, "usb-path", "", "Path to USB drive for Root CA key storage (optional)")
 
 	cobra.MarkFlagRequired(flags, "subject")
 	cobra.MarkFlagRequired(flags, "passphrase-file")
@@ -162,6 +164,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 	logger.Info("Certificate generated")
 
 	keyPath := filepath.Join(privateDir, "ca.key.pem")
+	if initUSBPath != "" {
+		if _, err := os.Stat(initUSBPath); os.IsNotExist(err) {
+			logger.Error("USB path %s does not exist. Please insert the USB drive.", initUSBPath)
+			return fmt.Errorf("usb drive not found: %w", err)
+		}
+		keyPath = filepath.Join(initUSBPath, "ca.key.pem")
+	}
 	logger.Info("Encrypting private key and saving to %s", keyPath)
 	encryptedKey, err := internalcrypto.EncryptPrivateKey(privKey, passphrase)
 	if err != nil {

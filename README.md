@@ -34,6 +34,13 @@ graph TD
 ## New to the Project?
 **Check out `NOOB_GUIDE.md` for a comprehensive step-by-step introduction specifically written for absolute beginners mapping out database setup, CA infrastructure, Issuance, Client interactions, and Test execution paths.**
 
+## Prerequisites
+
+Before building or running the project, ensure you have the following installed:
+- **Go** (1.20+)
+- **OpenSSL** (for OpenSSL verifications and TLS demo)
+- **Python 3** (optional, for running the TLS web server demo)
+
 ## Installation
 
 ```bash
@@ -108,3 +115,20 @@ Execute verification across the entirety of your backend log history validating 
 ```bash
 ./micropki audit verify
 ```
+
+## API Reference
+The MicroPKI Repository provides a REST API to fetch certificates, CRLs, and submit CSRs.
+For full details, see the [API Reference](Docs_extra/api_reference.md).
+
+## Security Considerations (Disclaimer)
+This project was developed for educational purposes (Sprint 8 submission) and demonstrates core PKI concepts. If deploying in a real environment, please note the following **security limitations**:
+- **Unencrypted Keys**: End-entity private keys (like server and client keys) are generated and stored unencrypted on disk.
+- **Passphrase Handling**: Root/Intermediate CA keys are encrypted, but their passphrases are read from plain-text files on disk during the demo for automation purposes.
+- **OCSP Transport Security**: The OCSP responder does not use HTTPS, which means there is no transport security for OCSP requests (vulnerable to MiTM).
+- **Rate Limiting**: Rate limiting (TCP HTB) is basic and intended to demonstrate the concept; it may not protect against sophisticated distributed DoS attacks.
+- **Audit Log Trust**: The audit log integrity relies on a cryptographically signed hash chain, but the log file itself is not signed by an external Timestamping Authority.
+- **Certificate Transparency**: CT is only simulated in logs; there is no real Merkle tree or public gossip network.
+- **Recommendation**: This system is **educational** and is not recommended for production use without significant further hardening and external hardware security modules (HSM).
+
+## Acknowledgments
+Developed as part of the Applied Cryptography Course (Semester 3). References standard RFCs (RFC 5280, RFC 6960).

@@ -139,18 +139,9 @@ func TestEncryptedKeyRoundTrip(t *testing.T) {
 		t.Fatalf("EncryptPrivateKey failed: %v", err)
 	}
 
-	// Decrypt using x509.DecryptPEMBlock
-	block, _ := pem.Decode(encryptedPEM)
-	if block == nil {
-		t.Fatal("Failed to decode encrypted PEM")
-	}
-	der, err := x509.DecryptPEMBlock(block, passphrase)
+	parsedKey, err := internalcrypto.DecryptPrivateKey(encryptedPEM, passphrase)
 	if err != nil {
-		t.Fatalf("DecryptPEMBlock failed: %v", err)
-	}
-	parsedKey, err := x509.ParsePKCS8PrivateKey(der)
-	if err != nil {
-		t.Fatalf("ParsePKCS8PrivateKey failed: %v", err)
+		t.Fatalf("DecryptPrivateKey failed: %v", err)
 	}
 	rsaParsed, ok := parsedKey.(*rsa.PrivateKey)
 	if !ok {

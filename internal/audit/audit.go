@@ -1,6 +1,8 @@
 package audit
 
 import (
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -22,11 +24,14 @@ var (
 	isInit     bool
 	zeroHash   string = "0000000000000000000000000000000000000000000000000000000000000000"
 	auditLogWriter *lumberjack.Logger
+	hmacKeyFile string
+	hmacSecret  []byte
 )
 
 type Integrity struct {
-	PrevHash string `json:"prev_hash"`
-	Hash     string `json:"hash"`
+	PrevHash      string `json:"prev_hash"`
+	Hash          string `json:"hash"`
+	HmacSignature string `json:"hmac_signature"`
 }
 
 type LogEntry struct {
@@ -47,9 +52,26 @@ func Init(baseDir string) error {
 	auditLog = filepath.Join(auditDir, "audit.log")
 	chainFile = filepath.Join(auditDir, "chain.dat")
 	ctLog = filepath.Join(auditDir, "ct.log")
+	hmacKeyFile = filepath.Join(auditDir, "audit.key")
 
 	if err := os.MkdirAll(auditDir, 0755); err != nil {
 		return err
+	}
+
+	// Load or generate HMAC key
+	if _, err := os.Stat(hmacKeyFile); os.IsNotExist(err) {
+		hmacSecret = make([]byte, 32)
+		if _, err := rand.Read(hmacSecret); err != nil {
+			return err
+		}
+		if err := os.WriteFile(hmacKeyFile, hmacSecret, 0600); err != nil {
+			return err
+		}
+	} else {
+		hmacSecret, err = os.ReadFile(hmacKeyFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Initialize chain.dat if it doesn't exist
@@ -138,6 +160,10 @@ func LogEvent(level, operation, status, message string, metadata map[string]inte
 	h := sha256.Sum256(raw)
 	entryHash := hex.EncodeToString(h[:])
 	entry.Integrity.Hash = entryHash
+
+	mac := hmac.New(sha256.New, hmacSecret)
+	mac.Write([]byte(entryHash))
+	entry.Integrity.HmacSignature = hex.EncodeToString(mac.Sum(nil))
 
 	finalJSON, err := json.Marshal(entry)
 	if err != nil {
