@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"micropki/internal/ca"
+	"micropki/internal/client"
 	"micropki/internal/logger"
 
 	"github.com/spf13/cobra"
@@ -16,7 +17,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(ca.CaCmd) // Add the parent ca command
+	rootCmd.AddCommand(ca.CaCmd)     // Certificate Authority commands
+	rootCmd.AddCommand(client.ClientCmd) // Client operations (gen-csr, validate, etc.)
 }
 
 func main() {

@@ -17,7 +17,7 @@ echo "=> Compiling Go binary for linux/amd64..."
 # Actually, providing the source and a simple "install.sh" that runs "go build" on the target machine is MUCH safer for CGO dependencies like sqlite3.
 
 echo "=> Copying source code..."
-cp -r cmd internal go.mod go.sum makefile release/micropki-dist/ 2>/dev/null || cp -r cmd internal go.mod makefile release/micropki-dist/
+cp -r cmd internal go.mod go.sum makefile release/micropki-dist/
 
 echo "=> Copying documentation and demo..."
 cp demo.sh release/micropki-dist/
@@ -42,7 +42,7 @@ if ! command -v go &> /dev/null; then
 fi
 
 echo "=> Compiling MicroPKI..."
-go mod tidy
+go mod download
 go build -o micropki ./cmd/micropki
 
 echo "=> Setting permissions..."

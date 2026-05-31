@@ -5,7 +5,7 @@ echo "=== MicroPKI Complete Demo (Sprints 1-8) ==="
 
 # Cleanup
 echo "=> Cleaning up previous state..."
-rm -rf ./pki_root ./pki ./secrets ./out ./audit.log ./chain.dat
+rm -rf ./pki_root ./pki ./secrets ./out ./audit.log ./chain.dat ./pki_root_usb ./pki_root_usb_offline
 
 if command -v go &> /dev/null; then
     echo "=> Building micropki..."
@@ -52,8 +52,9 @@ echo "=> Issuing OCSP Responder Certificate..."
     --db-path ./pki/micropki.db
 
 # Generate CRL
+mkdir -p ./pki/crl
 echo "=> Generating initial CRL..."
-./micropki ca gen-crl --ca intermediate --out-file ./pki/crl/intermediate.crl.pem --db-path ./pki/micropki.db
+./micropki ca gen-crl --ca intermediate --out-file ./pki/crl/intermediate.crl.pem --db-path ./pki/micropki.db --force
 
 # 4. Start Servers
 echo "=> Starting HTTP Repository Server..."
@@ -83,6 +84,7 @@ openssl req -new -newkey rsa:1024 -nodes -keyout ./out/weak.key -out ./out/weak.
     --ca-pass-file ./secrets/intermediate.pass \
     --template server \
     --subject "CN=weak" \
+    --san "dns:weak" \
     --csr ./out/weak.csr \
     --out-dir ./out \
     --db-path ./pki/micropki.db && echo "[FAIL] System allowed weak key!" || echo "[PASS] Policy engine correctly rejected weak key."
@@ -94,6 +96,7 @@ echo "=> Issuing Server Certificate..."
     --ca-pass-file ./secrets/intermediate.pass \
     --template server \
     --subject "CN=localhost" \
+    --san "dns:localhost" \
     --csr ./out/server.csr.pem \
     --out-dir ./out \
     --db-path ./pki/micropki.db
@@ -120,6 +123,7 @@ echo "=> Issuing Code Signing Certificate..."
     --ca-pass-file ./secrets/intermediate.pass \
     --template code_signing \
     --subject "CN=DevOps Code Signer" \
+    --san "dns:devops.internal" \
     --out-dir ./out \
     --db-path ./pki/micropki.db
     
@@ -132,12 +136,12 @@ openssl dgst -sha256 -verify <(openssl x509 -in ./out/DevOps_Code_Signer.cert.pe
 # 8. Revocation & Audit
 echo "=> Revoking server certificate..."
 SERIAL=$(openssl x509 -in ./out/localhost.cert.pem -noout -serial | cut -d= -f2 | tr '[:upper:]' '[:lower:]')
-if [ ! -z "$SERIAL" ]; then
+if [ -n "$SERIAL" ]; then
     ./micropki ca revoke $SERIAL --reason keyCompromise --db-path ./pki/micropki.db
 fi
 
 echo "=> Generating updated CRL..."
-./micropki ca gen-crl --ca intermediate --out-file ./pki/crl/intermediate.crl.pem --db-path ./pki/micropki.db
+./micropki ca gen-crl --ca intermediate --out-file ./pki/crl/intermediate.crl.pem --db-path ./pki/micropki.db --force
 
 echo "=> Connecting client to HTTPS server with Revocation Checking (Should FAIL)..."
 echo "Q" | openssl s_client -connect localhost:8443 -CAfile ./out/chain.pem -crl_check -CRLfile ./pki/crl/intermediate.crl.pem -quiet && echo "[FAIL] Connection succeeded despite revocation!" || echo "[PASS] Connection rejected due to revocation."

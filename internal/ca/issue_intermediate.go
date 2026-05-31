@@ -352,11 +352,11 @@ func validateIssueIntermediateArgs() error {
 	if interKeyType != "rsa" && interKeyType != "ecc" {
 		return fmt.Errorf("key-type must be 'rsa' or 'ecc'")
 	}
-	if interKeyType == "rsa" && interKeySize != 4096 {
-		return fmt.Errorf("RSA key size must be 4096")
+	if interKeyType == "rsa" && interKeySize < policy.CurrentConfig.Keys.RSAIntermediateMinBits {
+		return fmt.Errorf("RSA key size must be >= %d bits", policy.CurrentConfig.Keys.RSAIntermediateMinBits)
 	}
-	if interKeyType == "ecc" && interKeySize != 384 {
-		return fmt.Errorf("ECC key size must be 384")
+	if interKeyType == "ecc" && interKeySize < policy.CurrentConfig.Keys.ECCCAMinSize {
+		return fmt.Errorf("ECC key size must be >= %d bits", policy.CurrentConfig.Keys.ECCCAMinSize)
 	}
 	if interValidityDays <= 0 {
 		return fmt.Errorf("validity-days must be positive")
