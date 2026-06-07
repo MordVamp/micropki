@@ -22,4 +22,9 @@ func TestPolicyWriteAndAppend(t *testing.T) {
 	if len(data) == 0 {
 		t.Errorf("Expected policy text, got empty")
 	}
+
+	err = AppendIntermediate(tmpFile, name, serial, 365, "ecc", 384, 0, name)
+	if err != nil {
+		t.Fatalf("AppendIntermediate failed: %v", err)
+	}
 }

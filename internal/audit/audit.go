@@ -183,3 +183,13 @@ func LogEvent(level, operation, status, message string, metadata map[string]inte
 
 	return nil
 }
+
+// Close closes the audit log writer
+func Close() error {
+	mu.Lock()
+	defer mu.Unlock()
+	if auditLogWriter != nil {
+		return auditLogWriter.Close()
+	}
+	return nil
+}
