@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -13,6 +14,9 @@ func setupTestDB(t *testing.T) string {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "test.db")
 	if err := InitDB(dbPath); err != nil {
+		if strings.Contains(err.Error(), "CGO_ENABLED=0") {
+			t.Skipf("Skipping database test due to CGO_ENABLED=0: %v", err)
+		}
 		t.Fatalf("InitDB failed: %v", err)
 	}
 	t.Cleanup(func() { os.Remove(dbPath) })
@@ -221,6 +225,9 @@ func TestCreateDBIfNotExists(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "new.db")
 	if err := CreateDBIfNotExists(dbPath); err != nil {
+		if strings.Contains(err.Error(), "CGO_ENABLED=0") {
+			t.Skipf("Skipping database test due to CGO_ENABLED=0: %v", err)
+		}
 		t.Fatalf("CreateDBIfNotExists failed: %v", err)
 	}
 }
