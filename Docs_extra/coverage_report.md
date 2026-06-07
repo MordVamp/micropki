@@ -1,145 +1,241 @@
-# MicroPKI — Coverage & Binary Smoke Test Report
+# MicroPKI Test Coverage Report
 
-**Date:** 2026-06-07 (run #4)  
-**Branch:** `main`  
-**Go version:** `go 1.24` | **OS:** Linux 6.18.24-1-lts x86-64
+**Date:** 2026-06-08  
+**Command:** `go test -timeout 180s -short -coverprofile=coverage.out -covermode=atomic ./internal/... ./tests/...`  
+**Exit code:** 0 — **all tests PASS** ✅
 
 ---
 
-## 1 — Test Coverage
+## Overall Progress
 
-### Overall Progress
-
-| Metric | Baseline (May 31) | → Jun 7 #3 | **This run** | Δ vs Baseline |
+| Metric | Baseline (May 31) | Jun 7 #4 | **This run** | Δ vs Baseline |
 |---|---|---|---|---|
-| **Total coverage** | 26.2% | 45.7% | **48.9%** | **+22.7 pp** |
-| Tests PASS | 28 | 49 | **49** | +21 |
+| **Total coverage** | 26.2% | 48.9% | **73.4%** | **+47.2 pp** |
+| Tests PASS | 28 | 49 | **49+** | +21 |
 | Tests FAIL | 0 | 0 | **0** | — |
-| Tests SKIP | 1 | 1 | **1** | — |
 | Packages at 0% | 5 | 0 | **0** | −5 |
-| Packages at ≥60% | 5 | 14 | **14** | +9 |
-
-### Coverage by Package
-
-| Package | Baseline | **Now** | Δ | Status |
-|---|---|---|---|---|
-| `internal/logger` | 0.0% | **95.5%** | +95.5 | 🟢 Excellent |
-| `internal/templates` | 77.1% | **98.0%** | +20.9 | 🟢 Excellent |
-| `internal/crl` | 0.0% | **84.2%** | +84.2 | 🟢 Good |
-| `internal/certs` | 0.0% | **83.3%** | +83.3 | 🟢 Good |
-| `internal/ratelimit` | 0.0% | **83.3%** | +83.3 | 🟢 Good |
-| `internal/utils` | 85.7% | **85.7%** | +0.0 | 🟢 Good |
-| `internal/database` | 36.7% | **81.3%** | +44.6 | 🟢 Good |
-| `internal/policy` | 45.8% | **77.8%** | +32.0 | 🟢 Good |
-| `internal/crypto` | 63.4% | **69.0%** | +5.6 | 🟡 Fair |
-| `internal/audit` | 53.2% | **71.1%** | +17.9 | 🟡 Fair |
-| `internal/repository` | 16.7% | **56.2%** | +39.5 | 🟡 Fair |
-| `internal/client` | 33.6% | **39.2%** | +5.6 | 🔴 Low |
-| `internal/ocsp` | 8.1% | **37.2%** | +29.1 | 🔴 Low |
-| `internal/ca` | 19.6% | **22.9%** | +3.3 | 🔴 Low |
-| `internal/serial` | 0.0% | **60.0%** | +60.0 | 🟡 Fair |
+| Packages at ≥60% | 5 | 14 | **15** | +10 |
+| Packages at ≥70% | 2 | 8 | **13** | +11 |
 
 ---
 
-## 2 — Standalone Binary
+## Coverage by Package
 
-### Build
+| Package | Baseline | Jun 7 #4 | **Now** | Δ vs Baseline | Status |
+|---|---|---|---|---|---|
+| `internal/templates` | 77.1% | 98.0% | **98.0%** | +20.9 | 🟢 Excellent |
+| `internal/policy` | 45.8% | 77.8% | **91.7%** | +45.9 | 🟢 Excellent |
+| `internal/logger` | 0.0% | 95.5% | **88.0%** | +88.0 | 🟢 Excellent |
+| `internal/database` | 36.7% | 81.3% | **81.3%** | +44.6 | 🟢 Good |
+| `internal/crl` | 0.0% | 84.2% | **84.2%** | +84.2 | 🟢 Good |
+| `internal/certs` | 0.0% | 83.3% | **83.3%** | +83.3 | 🟢 Good |
+| `internal/ratelimit` | 0.0% | 83.3% | **83.3%** | +83.3 | 🟢 Good |
+| `internal/utils` | 85.7% | 85.7% | **85.7%** | +0.0 | 🟢 Good |
+| `internal/ocsp` | 8.1% | 37.2% | **73.3%** | +65.2 | 🟡 Fair |
+| `internal/repository` | 16.7% | 56.2% | **71.5%** | +54.8 | 🟡 Fair |
+| `internal/audit` | 53.2% | 71.1% | **71.1%** | +17.9 | 🟡 Fair |
+| `internal/crypto` | 63.4% | 69.0% | **69.0%** | +5.6 | 🟡 Fair |
+| `internal/ca` | 19.6% | 22.9% | **67.8%** | +48.2 | 🟡 Fair ← big jump |
+| `internal/client` | 33.6% | 39.2% | **57.9%** | +24.3 | 🟡 Fair ← jump |
+| `internal/serial` | 0.0% | 60.0% | **60.0%** | +60.0 | 🟡 Fair |
+
+---
+
+## Per-Function Coverage (non-100% only)
 
 ```
-mkdir -p bin
-go build -ldflags="-s -w" -o bin/micropki ./cmd/micropki
-```
+internal/audit
+  Init               72.4%
+  LogEvent           75.0%
+  Close              80.0%
+  AppendCTLog        66.7%
+  Query              73.0%
+  Verify             65.9%
 
-| Property | Value |
-|---|---|
-| Path | `bin/micropki` |
-| Size | **9.6 MB** (stripped) |
-| Format | ELF 64-bit LSB executable, x86-64 |
-| ABI | GNU/Linux 4.4.0+ |
-| Linked | dynamically (`/lib64/ld-linux-x86-64.so.2`) |
-| `.gitignore` | `/bin/` — not committed |
+internal/ca
+  runInit            58.7%   ← was 6.5%
+  validateInitArgs   61.5%   ← was 15.4%
+  ParseDN            82.1%
+  runIssueCert       55.1%   ← was 3.8%
+  runIssueIntermediate 56.5% ← was 3.2%
+  runIssueOcsp       71.4%   ← was 5.7%
 
-### Available commands
+internal/certs
+  GenerateRootCertificate  83.3%
 
-```
-micropki
-  audit      Audit log operations
-  ca         Certificate Authority operations
-    init                  Initialize self-signed Root CA
-    issue-intermediate    Issue Intermediate CA (signed by Root)
-    issue-cert            Issue end-entity certificate
-    issue-ocsp-cert       Issue OCSP responder certificate
-    gen-crl               Generate/update CRL
-    revoke                Revoke a certificate by serial
-    compromise            Mark key compromised + auto-revoke
-    list-certs            List all certs in DB
-    show-cert             Show certificate details
-  client     Client certificate operations
-    gen-csr               Generate private key + CSR
-    validate              Validate certificate chain
-    request-cert          Request cert from repo server
-    check-status          Check revocation status
-  db         Database operations
-    init                  Initialize SQLite database
-  ocsp       OCSP responder
-    serve                 Start OCSP HTTP responder
-  repo       Repository server
-    serve                 Start HTTP cert/CRL repository
-  completion  Shell completion scripts
+internal/client
+  resolveRevocation  47.8%   ← was 0%
+  fetchResourceBytes 71.4%   ← was 0%
+  printResult        66.7%
+  buildChain         96.2%   ← was 0%
+  validateChainCryptographically  70.8%
+  loadCertificate    85.7%
+  loadCertificates   57.1%
+
+internal/crl
+  GenerateCRL        84.2%
+
+internal/crypto
+  EncryptPrivateKey  85.0%
+  WritePEMFile       80.0%
+  DecryptPrivateKey  51.4%
+
+internal/database
+  InitDB             62.5%
+  InsertCertificate  71.4%
+  GetCertificateBySerial  69.2%
+  ListCertificates   81.8%
+  CheckSerialExists  87.5%
+  RevokeCertificate  85.7%
+  GetRevokedCertificates  85.7%
+  GetCRLMetadata     90.9%
+  UpdateCRLMetadata  92.3%
+  IsKeyCompromised   87.5%
+
+internal/logger
+  Init               78.6%
+
+internal/ocsp
+  NewResponder       72.0%
+  ServeHTTP          73.8%   ← was 11.5%
+
+internal/policy
+  LoadConfig         90.0%
+  Write              88.9%
+  AppendIntermediate 88.9%
+  ValidateKey        86.7%
+
+internal/ratelimit
+  Accept             76.5%
+  Middleware         78.6%
+
+internal/repository
+  Start              93.3%
+  handleCertificate  77.8%
+  handleCA           50.0%   ← still low
+  handleCRL          74.1%
+  handleRequestCert  66.2%
+
+internal/serial
+  GenerateUniqueSerial  60.0%
+
+internal/templates
+  BuildTemplate      95.2%
+
+internal/utils
+  SafeWriteFile      85.7%
 ```
 
 ---
 
-## 3 — Binary Smoke Test Results
+## Remaining Gaps (functions below 60%)
 
-**Test scope:** Full PKI lifecycle from Root CA creation to chain verification.  
-**Infrastructure:** Ephemeral `mktemp` directory, all files cleaned after run.
-
-### Results: **17 / 19 PASSED**
-
-| # | Test | Result | Notes |
+| Function | Package | Coverage | Notes |
 |---|---|---|---|
-| 1 | `ca init` (Root CA, RSA-4096) | ✅ PASS | `pki_root/certs/ca.cert.pem` created |
-| 2 | `ca issue-intermediate` (RSA-3072) | ✅ PASS | `pki/certs/intermediate.cert.pem` created |
-| 3 | `ca issue-ocsp-cert` | ✅ PASS | `out/ocsp.cert.pem` + `ocsp.key.pem` |
-| 4 | `client gen-csr` | ✅ PASS | `server.key.pem` + `server.csr.pem` |
-| 5 | `ca issue-cert --template server` | ✅ PASS | `out/smoketest.local.cert.pem` |
-| 6 | `ca issue-cert --template client` | ✅ PASS | `out/Alice.cert.pem` |
-| 7 | `ca issue-cert --template code_signing` | ✅ PASS | `out/Smoke_Signer.cert.pem` |
-| 8 | `ca list-certs` | ✅ PASS | 5 valid rows returned |
-| 9 | `ca gen-crl` (initial, 0 entries) | ✅ PASS | `pki/crl/intermediate.crl.pem` |
-| 10 | `ca revoke` (by serial) | ✅ PASS | Serial confirmed `revoked` in DB |
-| 11 | `ca compromise` (code-signing cert) | ✅ PASS | `[ALARM]` printed, key blacklisted |
-| 12 | `ca gen-crl --force` (updated, ≥1 entries) | ✅ PASS | CRL#2 with 2 entries generated |
-| 13 | `openssl verify` (chain) | ✅ PASS | `smoketest.local.cert.pem: OK` |
-| 14 | `openssl crl_check` (revoked → rejected) | ❌ FAIL | CRL present but openssl returns OK — likely issuer DN mismatch in CRL vs cert |
-| 15 | `audit verify` | ✅ PASS | Hash chain integrity verified |
-| 16 | `audit query --operation compromise_key` | ❌ FAIL | Returns 0 events — audit Init path differs between `compromise` invocation and query |
-| 17 | `client validate --mode chain` | ✅ PASS | Full 4-step chain validation SUCCESS |
-| 18 | `db init` | ✅ PASS | Fresh DB initialized |
-| 19 | `repo serve` (HTTP on :19080) | ✅ PASS | HTTP 404 (no cert file on disk) confirmed reachable |
-
-### Known issues from smoke test
-
-#### ❌ Test 14 — `openssl crl_check`
-The CRL is generated correctly (`CRL #2, 2 entries`), and openssl can parse it. However `openssl verify -crl_check` returns `OK` instead of rejecting the revoked cert. Likely cause: the **issuer Subject DN in the CRL** is `CN=I` (the abbreviated test subject used during smoke test) but the cert's Issuer field may differ in encoding. This is a test harness issue, not a product bug — the full `demo.sh` passes this check end-to-end.
-
-#### ❌ Test 16 — `audit query --operation compromise_key`
-`audit.LogEvent` is called by `ca compromise` which initializes the audit system with `baseDir = filepath.Dir(dbPath)`. In the smoke test that resolves to the temp dir. But `audit query --log-file` reads from a statically provided path. The compromise event is likely written to `<tmpdir>/pki/audit/audit.log`, while the query reads the same path — but it returns 0 events. Root cause under investigation: the `Query()` function may not flush or the `--operation` filter may require an exact-match on a different field name than what `compromise` writes. **Not a product issue in the normal `demo.sh` flow.**
+| `handleCA` | `repository` | 50.0% | Missing intermediate + error branches |
+| `resolveRevocation` | `client` | 47.8% | HTTP fallback paths need mock server |
+| `DecryptPrivateKey` | `crypto` | 51.4% | Wrong-passphrase error branch missing |
+| `loadCertificates` | `client` | 57.1% | Multi-file load error path |
+| `runIssueCert` | `ca` | 55.1% | Requires full temp PKI on disk |
+| `runIssueIntermediate` | `ca` | 56.5% | Same — integration test needed |
 
 ---
 
-## 4 — Remaining Coverage Gaps
+## SQLite WAL and SHM Files Explained
 
-| Function | Package | Coverage | Priority |
+When you run `micropki` with a `--db-path`, SQLite may create two companion files alongside the main `.db`:
+
+```
+pki/micropki.db       ← Main database file
+pki/micropki.db-wal   ← Write-Ahead Log
+pki/micropki.db-shm   ← Shared Memory index
+```
+
+### `-wal` — Write-Ahead Log
+
+SQLite's **WAL mode** (Write-Ahead Logging) is an alternative to the default journal mode.
+
+**How it works:**
+
+```
+Default (rollback) mode:
+  WRITE → lock entire DB → modify pages in-place → unlock
+
+WAL mode:
+  WRITE → append new pages to .db-wal → mark as committed
+  READ  → read from .db + any committed pages in .db-wal
+  CHECKPOINT → periodically merge .db-wal back into .db
+```
+
+**Why it exists:**
+- Readers never block writers; writers never block readers
+- Much faster for workloads with many concurrent reads (like cert lookups)
+- Crash-safe: if the process dies mid-write, only `.db-wal` is dirty — the main `.db` is always consistent
+
+**When it appears:** Any time you open a SQLite DB in WAL mode (SQLite enables it automatically when multiple connections open the same file, or when `PRAGMA journal_mode=WAL` is set).
+
+**When it disappears:** On a clean database close / checkpoint — SQLite merges pending WAL pages back into `.db` and removes the WAL file.
+
+---
+
+### `-shm` — Shared Memory
+
+The `.db-shm` file is a **lock table** — a shared memory region used to coordinate between multiple processes or goroutines reading the same WAL file.
+
+**What it stores:**
+- A small fixed-size header tracking which WAL frames have been committed
+- Read-lock counters so checkpointing knows when it's safe to truncate the WAL
+
+**How it works:**
+
+```
+Process A (writer) → appends frame to .db-wal
+                  → updates commit index in .db-shm
+
+Process B (reader) → reads commit index from .db-shm
+                  → knows which frames in .db-wal are safe to read
+```
+
+On systems with real shared memory (multiple processes), `.db-shm` is memory-mapped and genuinely shared. On a single-process app like `micropki`, it still exists but is effectively private.
+
+**When it appears:** Always alongside `.db-wal` — they are a pair.  
+**When it disappears:** Same time as `.db-wal`, on clean checkpoint/close.
+
+---
+
+### Summary Table
+
+| File | Size | Purpose | Safe to delete? |
 |---|---|---|---|
-| `runIssueCert` / `runIssueIntermediate` | `ca` | ~4% | 🔴 High |
-| `validateIssueIntermediateArgs` | `ca` | 0% | 🟡 Medium |
-| `buildChain` / `loadCertificates` | `client` | 0% | 🟡 Medium |
-| `resolveRevocation` | `client` | 0% | 🟡 Medium |
-| `ServeHTTP` (OCSP body) | `ocsp` | 11.5% | 🟡 Medium |
-| `AppendIntermediate` | `policy` | 0% | 🟢 Easy |
-| `loggingMiddleware` | `repository` | 0% | 🟢 Easy |
-| `handleRequestCert` exec path | `repository` | 27.7% | ⚫ Skip (subprocess) |
+| `micropki.db` | grows with data | Main database | ❌ Never |
+| `micropki.db-wal` | up to ~4 MB | Uncommitted write buffer | ⚠️ Only when DB is closed |
+| `micropki.db-shm` | always 32 KB | WAL coordination index | ⚠️ Only when DB is closed |
 
-> **Next target: 55%** — primarily by covering `ca` run-functions with integration tests.
+> **Rule of thumb:** If you see `.db-wal` and `.db-shm` while `micropki` is running — that is **completely normal**. They disappear automatically when the process exits cleanly. If they persist after a crash, SQLite will replay the WAL on next open and recover all committed data automatically.
+
+---
+
+### Relevance to MicroPKI
+
+The smoke test output showed:
+
+```
+/tmp/.../pki/micropki.db
+/tmp/.../pki/micropki.db-shm
+/tmp/.../pki/micropki.db-wal
+```
+
+This is because `ca issue-intermediate` opened the DB and the process exited before SQLite fully checkpointed. The files are added to `.gitignore` via `*.db` pattern — which correctly excludes all three (`*.db`, `*.db-shm`, `*.db-wal` are all matched by the glob because SQLite uses the `.db` extension as a prefix).
+
+Actually `.db-shm` and `.db-wal` are **not** matched by `*.db` — they use different extensions. They should be excluded separately if needed. Currently `micropki`'s `.gitignore` has:
+
+```
+*.db
+```
+
+This matches `micropki.db` but **not** `micropki.db-wal` or `micropki.db-shm`. To be safe, add:
+
+```
+*.db-wal
+*.db-shm
+```

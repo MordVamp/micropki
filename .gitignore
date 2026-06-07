@@ -18,6 +18,8 @@
 *.key
 *.pem
 *.db
+*.db-wal
+*.db-shm
 *.crl
 *.csr
 *.dat
