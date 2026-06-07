@@ -100,9 +100,10 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 	crlPath := filepath.Join(outDir, "crl.pem")
 	ca.CaCmd.SetArgs([]string{
 		"gen-crl",
-		"--out", crlPath,
+		"--out-file", crlPath,
+		"--ca", "root",
+		"--passphrase-file", passFile,
 		"--db-path", dbPath,
-		"--pki-dir", outDir,
 	})
 	if err := ca.CaCmd.Execute(); err != nil {
 		t.Fatalf("ca gen-crl failed: %v", err)
