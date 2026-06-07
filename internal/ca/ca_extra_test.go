@@ -244,7 +244,19 @@ func TestCACommandsFullWorkflow(t *testing.T) {
 	if err != nil || len(records) == 0 {
 		t.Fatalf("No certificates in DB: %v", err)
 	}
-	serialHex := records[0].SerialHex
+	
+	// Deterministically pick the OCSP responder to revoke, so we don't accidentally revoke the localhost cert 
+	// which is needed for the compromise step later. (SQLite sorts by created_at which has 1-second precision)
+	var serialHex string
+	for _, r := range records {
+		if strings.Contains(r.Subject, "OCSP Responder") {
+			serialHex = r.SerialHex
+			break
+		}
+	}
+	if serialHex == "" {
+		serialHex = records[0].SerialHex // Fallback
+	}
 
 	// 5. Run 'ca list-certs'
 	listArgs := []string{"list-certs", "--db-path", dbPath}
