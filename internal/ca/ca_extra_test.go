@@ -24,6 +24,7 @@ func TestCACommandsInvalidArgs(t *testing.T) {
 		CaCmd.SetArgs(args)
 		var out bytes.Buffer
 		CaCmd.SetOut(&out)
+		CaCmd.SetErr(&out)
 		_ = CaCmd.Execute()
 	}
 }

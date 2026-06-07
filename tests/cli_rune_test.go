@@ -21,17 +21,22 @@ func TestCLI_RunE(t *testing.T) {
 		ca.CaCmd.SetArgs(args)
 		var out bytes.Buffer
 		ca.CaCmd.SetOut(&out)
+		ca.CaCmd.SetErr(&out)
 		_ = ca.CaCmd.Execute()
 	}
 
 	clientCmds := [][]string{
+		{"gen-csr", "--subject", "CN=invalid"},
+		{"validate", "--cert", "/dev/null/invalid"},
+		{"request-cert", "--csr", "/dev/null/invalid"},
 		{"check-status", "--cert", "/dev/null/invalid", "--ca-cert", "/dev/null/invalid"},
-		{"validate", "--cert", "/dev/null/invalid", "--trusted", "/dev/null/invalid"},
 	}
+
 	for _, args := range clientCmds {
 		client.ClientCmd.SetArgs(args)
 		var out bytes.Buffer
 		client.ClientCmd.SetOut(&out)
+		client.ClientCmd.SetErr(&out)
 		_ = client.ClientCmd.Execute()
 	}
 }

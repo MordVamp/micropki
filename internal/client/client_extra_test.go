@@ -17,6 +17,7 @@ func TestClientCommandsInvalidArgs(t *testing.T) {
 		ClientCmd.SetArgs(args)
 		var out bytes.Buffer
 		ClientCmd.SetOut(&out)
+		ClientCmd.SetErr(&out)
 		_ = ClientCmd.Execute()
 	}
 }

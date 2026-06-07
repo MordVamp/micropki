@@ -16,6 +16,7 @@ func TestCLIBoilerplate(t *testing.T) {
 		rootCmd.SetArgs([]string{cmd, "--help"})
 		var out bytes.Buffer
 		rootCmd.SetOut(&out)
+		rootCmd.SetErr(&out)
 		
 		err := rootCmd.Execute()
 		if err != nil {
@@ -25,6 +26,9 @@ func TestCLIBoilerplate(t *testing.T) {
 	
 	// Also test main error path indirectly by passing an invalid command
 	rootCmd.SetArgs([]string{"nonexistent-command-123"})
+	var out bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&out)
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Errorf("expected error for nonexistent command, got nil")
@@ -44,6 +48,7 @@ func TestCLIBoilerplate(t *testing.T) {
 		rootCmd.SetArgs(args)
 		var out bytes.Buffer
 		rootCmd.SetOut(&out)
+		rootCmd.SetErr(&out)
 		_ = rootCmd.Execute() // We just want to cover the RunE, we don't care if it errors
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"micropki/internal/audit"
 
@@ -20,6 +21,10 @@ var auditQueryCmd = &cobra.Command{
 	Short: "Query audit log entries",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logFile, _ := cmd.Flags().GetString("log-file")
+		dbPath, _ := cmd.Flags().GetString("db-path")
+		if logFile == "" {
+			logFile = filepath.Join(filepath.Dir(dbPath), "audit", "audit.log")
+		}
 		operation, _ := cmd.Flags().GetString("operation")
 		level, _ := cmd.Flags().GetString("level")
 		serial, _ := cmd.Flags().GetString("serial")
@@ -55,6 +60,10 @@ var auditVerifyCmd = &cobra.Command{
 	Short: "Verify audit log integrity (hash chain + HMAC)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logFile, _ := cmd.Flags().GetString("log-file")
+		dbPath, _ := cmd.Flags().GetString("db-path")
+		if logFile == "" {
+			logFile = filepath.Join(filepath.Dir(dbPath), "audit", "audit.log")
+		}
 		chainFile, _ := cmd.Flags().GetString("chain-file")
 
 		if err := audit.Verify(logFile, chainFile); err != nil {
@@ -68,7 +77,8 @@ var auditVerifyCmd = &cobra.Command{
 
 func init() {
 	// query flags
-	auditQueryCmd.Flags().String("log-file", "./pki/audit/audit.log", "Path to audit log file")
+	auditQueryCmd.Flags().String("log-file", "", "Path to audit log file (overrides db-path)")
+	auditQueryCmd.Flags().String("db-path", "./pki/micropki.db", "SQLite DB path to infer audit log location")
 	auditQueryCmd.Flags().String("operation", "", "Filter by operation (e.g. compromise_key)")
 	auditQueryCmd.Flags().String("level", "", "Filter by level (e.g. AUDIT)")
 	auditQueryCmd.Flags().String("serial", "", "Filter by certificate serial number")
@@ -76,7 +86,8 @@ func init() {
 	auditQueryCmd.Flags().String("to", "", "End time filter (RFC3339)")
 
 	// verify flags
-	auditVerifyCmd.Flags().String("log-file", "./pki/audit/audit.log", "Path to audit log file")
+	auditVerifyCmd.Flags().String("log-file", "", "Path to audit log file (overrides db-path)")
+	auditVerifyCmd.Flags().String("db-path", "./pki/micropki.db", "SQLite DB path to infer audit log location")
 	auditVerifyCmd.Flags().String("chain-file", "", "Path to chain.dat file (auto-detected if empty)")
 
 	auditCmd.AddCommand(auditQueryCmd)
