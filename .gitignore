@@ -3,6 +3,7 @@
 *.test
 *.out
 /micropki
+/bin/
 
 # OS / Editor
 .DS_Store
