@@ -30,12 +30,13 @@ func TestCLIBoilerplate(t *testing.T) {
 		t.Errorf("expected error for nonexistent command, got nil")
 	}
 
+
 	// Trigger RunE of various subcommands to cover flag parsing and initial execution paths
 	runECmds := [][]string{
 		{"audit", "query", "--log-file", "/dev/null/invalid"},
 		{"audit", "verify", "--log-file", "/dev/null/invalid"},
-		{"ocsp", "start", "--port", "12345", "--cert", "/invalid", "--key", "/invalid"},
-		{"repo", "start", "--port", "12345", "--db-path", "/invalid"},
+		{"ocsp", "serve", "--port", "12345", "--cert", "/dev/null/invalid", "--key", "/dev/null/invalid"},
+		{"repo", "serve", "--port", "12345", "--db-path", "/dev/null/invalid"},
 		{"db", "init", "--db-path", "/invalid"},
 	}
 
@@ -45,4 +46,5 @@ func TestCLIBoilerplate(t *testing.T) {
 		rootCmd.SetOut(&out)
 		_ = rootCmd.Execute() // We just want to cover the RunE, we don't care if it errors
 	}
+
 }
