@@ -24,8 +24,8 @@ func TestClientIntegrationFull(t *testing.T) {
 		"--subject", "CN=Client Gen",
 		"--key-type", "rsa",
 		"--key-size", "2048",
-		"--out", csrPath,
-		"--key-out", keyPath,
+		"--out-csr", csrPath,
+		"--out-key", keyPath,
 	})
 	
 	if err := client.ClientCmd.Execute(); err != nil {

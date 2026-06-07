@@ -36,7 +36,6 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 		"--key-size", "2048",
 		"--passphrase-file", passFile,
 		"--out-dir", outDir,
-		"--db-path", dbPath,
 		"--log-file", logFile,
 	})
 	if err := ca.CaCmd.Execute(); err != nil {
