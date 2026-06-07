@@ -21,7 +21,9 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v -coverprofile=coverage.out ./...
+      env:
+        CGO_ENABLED: 1
+      run: go test -v -coverpkg=./... -coverprofile=coverage.out ./...
 
     - name: Generate Coverage Badge
       run: |
