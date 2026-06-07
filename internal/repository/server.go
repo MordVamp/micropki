@@ -28,6 +28,7 @@ type Server struct {
 	CAPassPath string
 	RateLimit  int
 	RateBurst  int
+	CLIPath    string
 }
 
 // loggingMiddleware logs the incoming HTTP requests
@@ -264,10 +265,14 @@ func (s *Server) handleRequestCert(w http.ResponseWriter, r *http.Request) {
 	}
 	tmpFile.Close()
 
-	exePath, err := os.Executable()
-	if err != nil {
-		http.Error(w, "internal exe resolution error", http.StatusInternalServerError)
-		return
+	exePath := s.CLIPath
+	if exePath == "" {
+		var err error
+		exePath, err = os.Executable()
+		if err != nil {
+			http.Error(w, "internal exe resolution error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	outDir, err := os.MkdirTemp("", "out-*")

@@ -205,16 +205,49 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 		t.Logf("failed to create OCSP responder: %v", err)
 	}
 
+	// Create a fake micropki script to mock the ca issue-cert call
+	fakeCliPath := filepath.Join(outDir, "fake_micropki.bat")
+	os.WriteFile(fakeCliPath, []byte(`@echo off
+set OUTDIR=
+:loop
+if "%1"=="" goto end
+if "%1"=="--out-dir" (
+  set OUTDIR=%2
+)
+shift
+goto loop
+:end
+echo FAKE_CERT > "%OUTDIR%\repo_test.cert.pem"
+`), 0755)
+
+	// Create linux sh script too just in case it runs on linux CI
+	fakeCliPathSh := filepath.Join(outDir, "fake_micropki.sh")
+	os.WriteFile(fakeCliPathSh, []byte(`#!/bin/sh
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        --out-dir) OUTDIR="$2"; shift ;;
+    esac
+    shift
+done
+echo "FAKE_CERT" > "$OUTDIR/repo_test.cert.pem"
+`), 0755)
+
+	cliPathToUse := fakeCliPathSh
+	if os.PathSeparator == '\\' {
+		cliPathToUse = fakeCliPath
+	}
+
 	// 12. Start Repo Server natively
 	repoSrv := &repository.Server{
 		Host:       "127.0.0.1",
 		Port:       18080,
 		DBPath:     dbPath,
-		CertDir:    filepath.Join(outDir, "certs"), // Note: outDir is pki, certs is pki/certs
+		CertDir:    filepath.Join(outDir, "certs"),
 		CACertPath: caCertPath,
 		CAKeyPath:  caKeyPath,
 		CAPassPath: passFile,
 		RateLimit:  0,
+		CLIPath:    cliPathToUse,
 	}
 	go repoSrv.Start()
 	time.Sleep(500 * time.Millisecond)
