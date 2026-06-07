@@ -2,22 +2,29 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
 )
 
 var (
-	logFile   *os.File
-	logger    *log.Logger
-	useStderr = true
+	logFile       *os.File
+	logger        *log.Logger
+	useStderr     = true
+	SilenceStderr = false
 )
 
 // Init sets up logging: if filePath is empty, logs go to stderr; otherwise to the file.
 func Init(filePath string) error {
 	if filePath == "" {
-		logger = log.New(os.Stderr, "", 0)
-		useStderr = true
+		if SilenceStderr {
+			logger = log.New(io.Discard, "", 0)
+			useStderr = false
+		} else {
+			logger = log.New(os.Stderr, "", 0)
+			useStderr = true
+		}
 		return nil
 	}
 

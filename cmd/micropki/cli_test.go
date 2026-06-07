@@ -3,7 +3,12 @@ package main
 import (
 	"bytes"
 	"testing"
+	"micropki/internal/logger"
 )
+
+func init() {
+	logger.SilenceStderr = true
+}
 
 func TestCLIBoilerplate(t *testing.T) {
 	// Execute all root commands with "--help" to cover the init() functions,

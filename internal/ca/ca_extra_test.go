@@ -3,7 +3,12 @@ package ca
 import (
 	"bytes"
 	"testing"
+	"micropki/internal/logger"
 )
+
+func init() {
+	logger.SilenceStderr = true
+}
 
 func TestCACommandsInvalidArgs(t *testing.T) {
 	// Execute various commands with missing or invalid flags to hit error branches directly

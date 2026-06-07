@@ -3,7 +3,12 @@ package client
 import (
 	"bytes"
 	"testing"
+	"micropki/internal/logger"
 )
+
+func init() {
+	logger.SilenceStderr = true
+}
 
 func TestClientCommandsInvalidArgs(t *testing.T) {
 	cmds := [][]string{

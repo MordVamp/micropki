@@ -16,6 +16,10 @@ import (
 	"micropki/internal/utils"
 )
 
+func init() {
+	logger.SilenceStderr = true
+}
+
 func TestUnreachableErrorBranches(t *testing.T) {
 	// We elegantly trigger "impossible" I/O errors by passing a directory path
 	// to functions that expect to write to a file. The OS will reject it with
