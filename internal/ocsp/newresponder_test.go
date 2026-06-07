@@ -44,12 +44,7 @@ func TestNewResponder(t *testing.T) {
 		t.Fatalf("Expected responder")
 	}
 
-	block, _ := pem.Decode(ocspCertPEM)
-	ocspCert, _ := x509.ParseCertificate(block.Bytes)
-
-	blockCA, _ := pem.Decode(caCertPEM)
-	caCert, _ := x509.ParseCertificate(blockCA.Bytes)
-
+	// Removed unused variables that broke compilation
 	// We can't import golang.org/x/crypto/ocsp because it shadows internal ocsp package?
 	// Wait, we can alias it or not use it if we don't need it.
 	// Actually we just need an HTTP POST with bad body to trigger 400
