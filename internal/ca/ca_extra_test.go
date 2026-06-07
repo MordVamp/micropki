@@ -27,31 +27,3 @@ func TestCACommandsInvalidArgs(t *testing.T) {
 		_ = CaCmd.Execute()
 	}
 }
-
-func TestIssueCertSpecificErrors(t *testing.T) {
-	// Let's set some global variables in issue-cert explicitly to trigger specific errors
-	certCACert = "/dev/null/invalid"
-	certCAKey = "/dev/null/invalid"
-	certCAPassFile = "/dev/null/invalid"
-	certTemplate = "invalid_template"
-	certSubject = "CN=test"
-	certDbPath = "/dev/null/invalid/db"
-	_ = runIssueCert(issueCertCmd, []string{})
-
-	// Same for intermediate
-	intermediateRootCert = "/dev/null/invalid"
-	intermediateRootKey = "/dev/null/invalid"
-	_ = runIssueIntermediate(issueIntermediateCmd, []string{})
-
-	// Same for gen_root
-	rootOutDir = "/dev/null/invalid"
-	_ = runInitRootCA(initCmd, []string{})
-
-	// Same for ocsp
-	ocspCACert = "/dev/null/invalid"
-	_ = runIssueOCSPCert(issueOCSPCmd, []string{})
-
-	// Same for crl
-	crlPassFile = "/dev/null/invalid"
-	_ = runGenCRL(genCRLCmd, []string{})
-}

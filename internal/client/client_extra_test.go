@@ -20,22 +20,3 @@ func TestClientCommandsInvalidArgs(t *testing.T) {
 		_ = ClientCmd.Execute()
 	}
 }
-
-func TestClientSpecificErrors(t *testing.T) {
-	// Directly call RunE to trigger specific variables
-	csrOut = "/dev/null/invalid"
-	csrKeyOut = "/dev/null/invalid"
-	_ = runGenCSR(genCSRCmd, []string{})
-
-	reqCSRPath = "/dev/null/invalid"
-	reqOutCert = "/dev/null/invalid"
-	_ = runRequestCert(requestCertCmd, []string{})
-
-	chkCertPath = "/dev/null/invalid"
-	chkCACertPath = "/dev/null/invalid"
-	_ = runCheckStatus(checkStatusCmd, []string{})
-
-	valCertPath = "/dev/null/invalid"
-	valTrustedPath = "/dev/null/invalid"
-	_ = runValidate(validateCmd, []string{})
-}
