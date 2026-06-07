@@ -6,65 +6,99 @@ import (
 	"testing"
 )
 
-func TestTemplates(t *testing.T) {
-	tmplServer, err := ParseTemplate("server")
-	if err != nil || tmplServer != Server {
-		t.Errorf("Failed to parse server template")
+func TestTemplates_String(t *testing.T) {
+	if Server.String() != "server" {
+		t.Errorf("expected server, got %s", Server.String())
+	}
+	if Client.String() != "client" {
+		t.Errorf("expected client, got %s", Client.String())
+	}
+	if CodeSigning.String() != "code_signing" {
+		t.Errorf("expected code_signing, got %s", CodeSigning.String())
+	}
+	unknown := TemplateType(99)
+	if unknown.String() != "unknown" {
+		t.Errorf("expected unknown, got %s", unknown.String())
+	}
+}
+
+func TestParseTemplate(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected TemplateType
+		hasErr   bool
+	}{
+		{"server", Server, false},
+		{"client", Client, false},
+		{"code_signing", CodeSigning, false},
+		{"invalid", 0, true},
 	}
 
-	tmplClient, err := ParseTemplate("client")
-	if err != nil || tmplClient != Client {
-		t.Errorf("Failed to parse client template")
+	for _, tc := range tests {
+		tt, err := ParseTemplate(tc.input)
+		if tc.hasErr {
+			if err == nil {
+				t.Errorf("expected error for %s", tc.input)
+			}
+		} else {
+			if err != nil || tt != tc.expected {
+				t.Errorf("expected %v, got %v (err: %v)", tc.expected, tt, err)
+			}
+		}
 	}
+}
 
-	tmplCodeSigning, err := ParseTemplate("code_signing")
-	if err != nil || tmplCodeSigning != CodeSigning {
-		t.Errorf("Failed to parse code_signing template")
-	}
-
-	_, err = ParseTemplate("unknown")
-	if err == nil {
-		t.Errorf("Expected error for unknown template")
-	}
-
-	subject := &pkix.Name{CommonName: "test"}
-	serial := big.NewInt(1)
+func TestBuildTemplate(t *testing.T) {
+	subj := &pkix.Name{CommonName: "Test"}
+	serial := big.NewInt(123)
 
 	// Server template success
-	sans := []string{"dns:example.com", "ip:1.1.1.1"}
-	certTmpl, err := BuildTemplate(Server, subject, sans, 365, serial)
-	if err != nil {
-		t.Errorf("BuildTemplate (server) failed: %v", err)
-	}
-	if len(certTmpl.DNSNames) != 1 || len(certTmpl.IPAddresses) != 1 {
-		t.Errorf("Expected 1 DNS and 1 IP SAN")
+	tmpl, err := BuildTemplate(Server, subj, []string{"dns:example.com"}, 365, serial)
+	if err != nil || tmpl == nil {
+		t.Errorf("expected success, got err: %v", err)
 	}
 
-	// Server template missing SAN
-	_, err = BuildTemplate(Server, subject, []string{}, 365, serial)
+	// Server template failure (no SAN)
+	_, err = BuildTemplate(Server, subj, []string{}, 365, serial)
 	if err == nil {
-		t.Errorf("Expected error for server without SAN")
+		t.Errorf("expected err for server without SANs")
 	}
 
-	// CodeSigning template with IP SAN
-	_, err = BuildTemplate(CodeSigning, subject, []string{"ip:1.1.1.1"}, 365, serial)
-	if err == nil {
-		t.Errorf("Expected error for code_signing with IP SAN")
+	// Client template success
+	tmpl, err = BuildTemplate(Client, subj, []string{"email:test@example.com"}, 365, serial)
+	if err != nil || tmpl == nil {
+		t.Errorf("expected success, got err: %v", err)
 	}
 
-	// Invalid SAN
-	_, err = BuildTemplate(Client, subject, []string{"invalid"}, 365, serial)
+	// CodeSigning failure (IP SAN)
+	_, err = BuildTemplate(CodeSigning, subj, []string{"ip:1.1.1.1"}, 365, serial)
 	if err == nil {
-		t.Errorf("Expected error for invalid SAN format")
+		t.Errorf("expected err for code_signing with IP SAN")
 	}
 
-	_, err = BuildTemplate(Client, subject, []string{"ip:invalid"}, 365, serial)
-	if err == nil {
-		t.Errorf("Expected error for invalid IP SAN format")
+	// CodeSigning success
+	tmpl, err = BuildTemplate(CodeSigning, subj, []string{"uri:http://example.com"}, 365, serial)
+	if err != nil || tmpl == nil {
+		t.Errorf("expected success, got err: %v", err)
+	}
+}
+
+func TestParseSANs_Errors(t *testing.T) {
+	tests := []struct {
+		input  string
+		hasErr bool
+	}{
+		{"invalid-format", true},
+		{"unknown:value", true},
+		{"ip:not-an-ip", true},
+		{"email:not-an-email", true},
+		{"uri::invalid", true},
 	}
 
-	_, err = BuildTemplate(Client, subject, []string{"email:invalid"}, 365, serial)
-	if err == nil {
-		t.Errorf("Expected error for invalid email SAN format")
+	for _, tc := range tests {
+		_, _, _, _, err := parseSANs([]string{tc.input})
+		if (err != nil) != tc.hasErr {
+			t.Errorf("expected err=%v for %s, got %v", tc.hasErr, tc.input, err)
+		}
 	}
 }

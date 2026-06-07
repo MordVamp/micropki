@@ -42,4 +42,5 @@ func TestCTLog(t *testing.T) {
 	Init(testDir)
 
 	AppendCTLog("1234", "CN=Test", "abcd", "CN=Issuer")
+	Close()
 }
