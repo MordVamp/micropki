@@ -20,7 +20,7 @@ func GenerateUniqueSerial() (*big.Int, error) {
 	for attempt := 0; attempt < 5; attempt++ { // Retry a few times in case of collision
 		// High 32 bits
 		now := uint32(time.Now().Unix())
-		
+
 		// Low 32 bits
 		randBytes := make([]byte, 4)
 		if _, err := rand.Read(randBytes); err != nil {

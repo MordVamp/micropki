@@ -21,7 +21,7 @@ func TestFetchResourceBytes(t *testing.T) {
 	if string(data) != "mock data" {
 		t.Errorf("expected mock data, got %s", string(data))
 	}
-	
+
 	_, err = fetchResourceBytes("http://127.0.0.1:0/invalid")
 	if err == nil {
 		t.Error("expected error for invalid URL")
@@ -31,12 +31,12 @@ func TestFetchResourceBytes(t *testing.T) {
 func TestLoadCertificate(t *testing.T) {
 	tmpFile := filepath.Join(t.TempDir(), "cert.pem")
 	os.WriteFile(tmpFile, []byte("invalid cert"), 0644)
-	
+
 	_, err := loadCertificate(tmpFile)
 	if err == nil {
 		t.Error("expected error for invalid cert")
 	}
-	
+
 	certs, err := loadCertificates(tmpFile)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
@@ -44,7 +44,7 @@ func TestLoadCertificate(t *testing.T) {
 	if len(certs) != 0 {
 		t.Errorf("expected 0 certs, got %d", len(certs))
 	}
-	
+
 	_, err = loadCertificate("nonexistent.pem")
 	if err == nil {
 		t.Error("expected error for nonexistent file")

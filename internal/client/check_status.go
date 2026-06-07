@@ -66,7 +66,7 @@ func init() {
 	flags.String("ca-cert", "", "Path to issuer CA certificate (PEM)")
 	flags.String("crl", "", "Optional static CRL location overriding CDP")
 	flags.String("ocsp-url", "", "Optional OCSP responder overriding AIA")
-	
+
 	cobra.MarkFlagRequired(flags, "cert")
 	cobra.MarkFlagRequired(flags, "ca-cert")
 	ClientCmd.AddCommand(checkStatusCmd)
@@ -78,7 +78,7 @@ func resolveRevocation(cert *x509.Certificate, issuer *x509.Certificate, crlOver
 	if useOcsp && len(cert.OCSPServer) > 0 {
 		ocspEp := cert.OCSPServer[0]
 		logger.Info("Attempting OCSP query against %s", ocspEp)
-		
+
 		reqDER, err := ocsp.CreateRequest(cert, issuer, nil)
 		if err == nil {
 			httpReq, err := http.NewRequest("POST", ocspEp, bytes.NewBuffer(reqDER))

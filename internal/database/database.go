@@ -32,7 +32,7 @@ type CertificateRecord struct {
 // InitDB initializes the SQLite database connection and sets up the schema.
 func InitDB(dbPath string) error {
 	logger.Info("Initializing database at %s", dbPath)
-	
+
 	// Ensure directory exists
 	// The caller should handle the directory creation or we can do it here. Let's not assume directory existence.
 	dbUri := fmt.Sprintf("file:%s?_journal=WAL&_busy_timeout=5000", filepath.ToSlash(dbPath))
@@ -266,7 +266,7 @@ type CRLMetadata struct {
 	CRLPath       string
 }
 
-// RevokeCertificate marks a certificate as revoked. 
+// RevokeCertificate marks a certificate as revoked.
 func RevokeCertificate(serialHex string, reason string) error {
 	if DB == nil {
 		return fmt.Errorf("database not initialized")

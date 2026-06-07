@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(ca.CaCmd)     // Certificate Authority commands
+	rootCmd.AddCommand(ca.CaCmd)         // Certificate Authority commands
 	rootCmd.AddCommand(client.ClientCmd) // Client operations (gen-csr, validate, etc.)
 }
 

@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	visitors = make(map[string]*rate.Limiter)
-	mu       sync.Mutex
+	visitors      = make(map[string]*rate.Limiter)
+	mu            sync.Mutex
 	globalLimiter *rate.Limiter
 )
 
 func init() {
-    // Global token bucket for the root of the hierarchy
+	// Global token bucket for the root of the hierarchy
 	globalLimiter = rate.NewLimiter(rate.Limit(1000), 200)
 }
 
@@ -61,7 +61,7 @@ func (l *HTBListener) Accept() (net.Conn, error) {
 		// Apply per-IP limit (hierarchy leaf)
 		ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 		limiter := getVisitor(ip, l.Limit, l.Burst)
-		
+
 		if !limiter.Allow() {
 			conn.Close() // Reject connection if rate limit exceeded
 			// Add a tiny delay to prevent busy looping on high DoS
@@ -93,7 +93,7 @@ func Middleware(limit float64, burst int, next http.Handler) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := strings.Split(r.RemoteAddr, ":")[0]
-		
+
 		// Global
 		if !globalLimiter.Allow() {
 			w.Header().Set("Retry-After", "5")

@@ -29,9 +29,9 @@ var requestCertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		req.Header.Set("Content-Type", "application/x-pem-file")
-		
+
 		// Authenticate securely (Simulated API for Sprint 6 Demo limits)
 		req.Header.Set("X-API-Key", "changeme")
 
@@ -66,6 +66,6 @@ func init() {
 	flags.String("template", "server", "Certificate template constraint: server, client, code_signing")
 	flags.String("ca-url", "http://127.0.0.1:8080", "Base URL mapped to the repository active subsystem")
 	flags.String("out-cert", "./cert.pem", "Output file tracking the resulting signed certificate (PEM)")
-	
+
 	ClientCmd.AddCommand(requestCertCmd)
 }

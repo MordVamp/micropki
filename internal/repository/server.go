@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-	"net"
 
 	"micropki/internal/database"
 	"micropki/internal/logger"
@@ -34,12 +34,12 @@ type Server struct {
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Create a custom response writer to capture the status code
 		lrw := &loggingResponseWriter{ResponseWriter: w, status: http.StatusOK}
-		
+
 		next.ServeHTTP(lrw, r)
-		
+
 		logger.Info("[HTTP] %s %s %s %d %v", r.Method, r.URL.Path, r.RemoteAddr, lrw.status, time.Since(start))
 	})
 }
@@ -72,7 +72,7 @@ func (s *Server) Start() error {
 	handler = ratelimit.Middleware(float64(s.RateLimit), s.RateBurst, handler)
 
 	logger.Info("Starting repository server on http://%s", addr)
-	
+
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: handler,
@@ -139,7 +139,7 @@ func (s *Server) handleCA(w http.ResponseWriter, r *http.Request) {
 
 	// URL format: /ca/<level>
 	level := strings.TrimPrefix(r.URL.Path, "/ca/")
-	
+
 	var filename string
 	switch level {
 	case "root":
@@ -152,7 +152,7 @@ func (s *Server) handleCA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	certPath := filepath.Join(s.CertDir, filename)
-	
+
 	file, err := os.Open(certPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -193,7 +193,7 @@ func (s *Server) handleCRL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	crlPath := filepath.Join(filepath.Dir(s.CertDir), "crl", filename)
-	
+
 	file, err := os.Open(crlPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -324,4 +324,3 @@ func (s *Server) handleRequestCert(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Write(certPEM)
 }
-

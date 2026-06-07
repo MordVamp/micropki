@@ -16,16 +16,16 @@ import (
 )
 
 var (
-	auditDir   string = "./pki/audit"
-	auditLog   string
-	chainFile  string
-	ctLog      string
-	mu         sync.Mutex
-	isInit     bool
-	zeroHash   string = "0000000000000000000000000000000000000000000000000000000000000000"
+	auditDir       string = "./pki/audit"
+	auditLog       string
+	chainFile      string
+	ctLog          string
+	mu             sync.Mutex
+	isInit         bool
+	zeroHash       string = "0000000000000000000000000000000000000000000000000000000000000000"
 	auditLogWriter *lumberjack.Logger
-	hmacKeyFile string
-	hmacSecret  []byte
+	hmacKeyFile    string
+	hmacSecret     []byte
 )
 
 type Integrity struct {
@@ -80,14 +80,14 @@ func Init(baseDir string) error {
 			return err
 		}
 	}
-	
+
 	// Create audit.log rotation writer
 	auditLogWriter = &lumberjack.Logger{
 		Filename:   auditLog,
 		MaxSize:    10, // megabytes
 		MaxBackups: 5,
 		MaxAge:     30, // days
-		Compress:   true, 
+		Compress:   true,
 	}
 
 	// Create ct.log if missing

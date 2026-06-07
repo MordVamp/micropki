@@ -32,7 +32,7 @@ var ReasonCodeMap = map[string]int{
 // GenerateCRL generates a new signed CRL for a given CA
 func GenerateCRL(caCert *x509.Certificate, caKey crypto.Signer, nextUpdateDays int) ([]byte, error) {
 	subjectStr := caCert.Subject.String()
-	
+
 	records, err := database.GetRevokedCertificates(subjectStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed fetching revoked certs: %w", err)
@@ -78,7 +78,7 @@ func GenerateCRL(caCert *x509.Certificate, caKey crypto.Signer, nextUpdateDays i
 	if err != nil {
 		return nil, fmt.Errorf("metadata fetch error: %w", err)
 	}
-	
+
 	crlNumber := int64(1)
 	if meta != nil {
 		crlNumber = meta.CRLNumber + 1
@@ -88,12 +88,12 @@ func GenerateCRL(caCert *x509.Certificate, caKey crypto.Signer, nextUpdateDays i
 	nextUpdate := now.AddDate(0, 0, nextUpdateDays)
 
 	crlTemplate := &x509.RevocationList{
-		SignatureAlgorithm: caCert.SignatureAlgorithm,
+		SignatureAlgorithm:  caCert.SignatureAlgorithm,
 		RevokedCertificates: revokedCerts,
-		Number: big.NewInt(crlNumber),
-		ThisUpdate: now,
-		NextUpdate: nextUpdate,
-		ExtraExtensions: []pkix.Extension{}, // AKI is automatically added by CreateRevocationList in newer go versions
+		Number:              big.NewInt(crlNumber),
+		ThisUpdate:          now,
+		NextUpdate:          nextUpdate,
+		ExtraExtensions:     []pkix.Extension{}, // AKI is automatically added by CreateRevocationList in newer go versions
 	}
 
 	crlDER, err := x509.CreateRevocationList(rand.Reader, crlTemplate, caCert, caKey)

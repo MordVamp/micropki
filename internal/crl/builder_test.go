@@ -33,18 +33,18 @@ func TestGenerateCRL(t *testing.T) {
 	subject := &pkix.Name{CommonName: "Test CRL CA"}
 	serial := big.NewInt(1)
 	certPEM, _ := certs.GenerateRootCertificate(subject, &key.PublicKey, key, 365, serial)
-	
+
 	block, _ := pem.Decode(certPEM)
 	caCert, _ := x509.ParseCertificate(block.Bytes)
 
 	subjectStr := caCert.Subject.String()
 	serialFake := big.NewInt(1234)
-	
+
 	err = database.InsertCertificate(serialFake, "CN=Fake", subjectStr, time.Now(), time.Now().Add(time.Hour), []byte("fake-pem"))
 	if err != nil {
 		t.Fatalf("InsertCertificate failed: %v", err)
 	}
-	
+
 	err = database.RevokeCertificate(fmt.Sprintf("%x", serialFake), "keyCompromise")
 	if err != nil {
 		t.Fatalf("RevokeCertificate failed: %v", err)

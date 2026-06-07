@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"micropki/internal/audit"
-	"micropki/internal/policy"
 	internalcrypto "micropki/internal/crypto"
 	"micropki/internal/database"
 	"micropki/internal/logger"
+	"micropki/internal/policy"
 	pkgserial "micropki/internal/serial"
 
 	"github.com/spf13/cobra"
@@ -167,7 +167,7 @@ func runIssueOcsp(cmd *cobra.Command, args []string) error {
 	keyPath := filepath.Join(ocspOutDir, baseName+".key.pem")
 
 	os.WriteFile(certPath, certPEM, 0644)
-	
+
 	keyDER, _ := x509.MarshalPKCS8PrivateKey(priv)
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
 	os.WriteFile(keyPath, keyPEM, 0600)

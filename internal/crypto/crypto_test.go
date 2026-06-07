@@ -20,7 +20,7 @@ func TestCrypto(t *testing.T) {
 	if rsaKey.N.BitLen() != 2048 {
 		t.Errorf("Expected 2048 bits, got %d", rsaKey.N.BitLen())
 	}
-	
+
 	// GenerateECCKey
 	eccKey, err := GenerateECCKey()
 	if err != nil {
@@ -29,14 +29,14 @@ func TestCrypto(t *testing.T) {
 	if eccKey.Curve != elliptic.P384() {
 		t.Errorf("Expected P-384 curve")
 	}
-	
+
 	// Zeroize
 	buf := []byte{1, 2, 3, 4}
 	Zeroize(buf)
 	if !bytes.Equal(buf, []byte{0, 0, 0, 0}) {
 		t.Errorf("Zeroize failed")
 	}
-	
+
 	// Encrypt & Decrypt RSA
 	passphrase := []byte("secret")
 	encryptedPEM, err := EncryptPrivateKey(rsaKey, passphrase)
@@ -50,7 +50,7 @@ func TestCrypto(t *testing.T) {
 	if _, ok := decryptedKey.(*rsa.PrivateKey); !ok {
 		t.Errorf("Expected RSA private key")
 	}
-	
+
 	// Encrypt & Decrypt ECC
 	eccEncrypted, err := EncryptPrivateKey(eccKey, passphrase)
 	if err != nil {
@@ -72,7 +72,7 @@ func TestCrypto(t *testing.T) {
 	if len(ski) != 20 {
 		t.Errorf("Expected SKI length 20, got %d", len(ski))
 	}
-	
+
 	// WritePEMFile
 	tmpFile := filepath.Join(t.TempDir(), "test.pem")
 	block := &pem.Block{Type: "TEST", Bytes: []byte("test")}

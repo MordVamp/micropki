@@ -60,7 +60,7 @@ func init() {
 	listCertsCmd.Flags().String("status", "", "Filter by status (valid, revoked, expired)")
 	listCertsCmd.Flags().String("format", "table", "Output format (table, json)")
 	listCertsCmd.Flags().String("db-path", "./pki/micropki.db", "File path for the SQLite database")
-	
+
 	CaCmd.AddCommand(listCertsCmd)
 }
 

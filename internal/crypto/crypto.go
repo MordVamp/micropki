@@ -61,7 +61,7 @@ func EncryptPrivateKey(key crypto.PrivateKey, passphrase []byte) ([]byte, error)
 	}
 
 	ciphertext := aead.Seal(nil, nonce, der, nil)
-	
+
 	// Format for PEM: salt + nonce + ciphertext
 	payload := append(salt, nonce...)
 	payload = append(payload, ciphertext...)
@@ -120,7 +120,7 @@ func DecryptPrivateKey(pemData []byte, passphrase []byte) (crypto.PrivateKey, er
 		if err != nil {
 			return nil, err
 		}
-		
+
 		der, err = aead.Open(nil, nonce, ciphertext, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt chacha20 private key: %w", err)

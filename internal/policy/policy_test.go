@@ -11,7 +11,7 @@ import (
 
 func TestValidateKey(t *testing.T) {
 	privRSA, _ := rsa.GenerateKey(rand.Reader, 2048)
-	
+
 	if err := ValidateKey(&privRSA.PublicKey, "root"); err == nil {
 		t.Errorf("Expected error for 2048-bit RSA root key")
 	}

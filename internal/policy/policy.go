@@ -1,17 +1,17 @@
 package policy
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/x509/pkix"
 	"fmt"
 	"math/big"
+	"net"
+	"net/url"
 	"os"
 	"strings"
 	"time"
-	"crypto"
-	"crypto/rsa"
-	"crypto/ecdsa"
-	"net"
-	"net/url"
 )
 
 // Write creates a policy.txt file with the given CA information.

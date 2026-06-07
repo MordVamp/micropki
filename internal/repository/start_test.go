@@ -10,7 +10,7 @@ func TestStart(t *testing.T) {
 		Host: "127.0.0.1",
 		Port: 0,
 	}
-	
+
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- srv.Start()

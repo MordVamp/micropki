@@ -29,24 +29,36 @@ type Responder struct {
 func NewResponder(certPath, keyPath, caCertPath string) (*Responder, error) {
 	// read certs and key
 	certPEM, err := os.ReadFile(certPath)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	block, _ := pem.Decode(certPEM)
 	responderCert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	caPEM, err := os.ReadFile(caCertPath)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	blockCA, _ := pem.Decode(caPEM)
 	caCert, err := x509.ParseCertificate(blockCA.Bytes)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	keyPEM, err := os.ReadFile(keyPath)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	blockKey, _ := pem.Decode(keyPEM)
-	
+
 	privKey, err := x509.ParsePKCS8PrivateKey(blockKey.Bytes)
-	if err != nil { return nil, err }
-	
+	if err != nil {
+		return nil, err
+	}
+
 	signer, ok := privKey.(crypto.Signer)
 	if !ok {
 		return nil, fmt.Errorf("private key is not a signer")
@@ -87,10 +99,10 @@ func (r *Responder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// OCSP-7: Check Cache to avoid DB read
 	type cacheEntry struct {
-		status     int
-		revTime    time.Time
-		reason     int
-		expiresAt  time.Time
+		status    int
+		revTime   time.Time
+		reason    int
+		expiresAt time.Time
 	}
 
 	var status int
@@ -136,8 +148,8 @@ func (r *Responder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// ASN.1 structure: OCSPRequest ::= SEQUENCE { tbsRequest TBSRequest }
 	// TBSRequest ::= SEQUENCE { ... requestExtensions [2] EXPLICIT Extensions OPTIONAL }
 	type tbsRequest struct {
-		Raw        asn1.RawContent
-		Version    asn1.RawValue `asn1:"optional,explicit,default:0,tag:0"`
+		Raw           asn1.RawContent
+		Version       asn1.RawValue `asn1:"optional,explicit,default:0,tag:0"`
 		RequestorName asn1.RawValue `asn1:"optional,explicit,tag:1"`
 		RequestList   asn1.RawValue
 		Extensions    []pkix.Extension `asn1:"optional,explicit,tag:2"`

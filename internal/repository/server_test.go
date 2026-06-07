@@ -13,7 +13,7 @@ func TestRepositoryEndpoints(t *testing.T) {
 	tmpDir := t.TempDir()
 	certDir := filepath.Join(tmpDir, "certs")
 	os.MkdirAll(certDir, 0700)
-	
+
 	rootCertPath := filepath.Join(certDir, "ca.cert.pem")
 	os.WriteFile(rootCertPath, []byte("ROOT_PEM"), 0644)
 
@@ -42,7 +42,7 @@ func TestRepositoryEndpoints(t *testing.T) {
 	reqCRL := httptest.NewRequest("GET", "/crl", nil)
 	wCRL := httptest.NewRecorder()
 	mux.ServeHTTP(wCRL, reqCRL)
-	
+
 	resCRL := wCRL.Result()
 	if resCRL.StatusCode != http.StatusNotFound {
 		t.Errorf("Expected GET /crl to legitimately return 404 since the file isn't created in test mode, got %d", resCRL.StatusCode)

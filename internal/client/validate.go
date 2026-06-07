@@ -78,7 +78,7 @@ var validateCmd = &cobra.Command{
 			printResult(result, format)
 			return nil
 		}
-		
+
 		chainNames := []string{}
 		for _, c := range chain {
 			chainNames = append(chainNames, c.Subject.CommonName)
@@ -97,15 +97,15 @@ var validateCmd = &cobra.Command{
 		// 3. Optional Revocation
 		if mode == "full" {
 			// Integrate revocation check. For Sprint 6 demo simplicity inside `validate`, we will just note it passes if checkStatus succeeds.
-			// The explicit `client check-status` handles logic deeply. 
+			// The explicit `client check-status` handles logic deeply.
 			// We can call RevocationStatus here recursively on chain certificates
 			crlOpt, _ := cmd.Flags().GetString("crl")
 			useOcsp, _ := cmd.Flags().GetBool("ocsp")
-			
+
 			for i := 0; i < len(chain)-1; i++ { // check all except root
 				subjectCert := chain[i]
 				issuerCert := chain[i+1]
-				
+
 				revStatus, reason, err := resolveRevocation(subjectCert, issuerCert, crlOpt, useOcsp)
 				if err != nil {
 					result.Error = fmt.Sprintf("Revocation check failed on %s: %v", subjectCert.Subject.CommonName, err)

@@ -1,10 +1,13 @@
 package ocsp
 
 import (
+	"bytes"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,5 +42,22 @@ func TestNewResponder(t *testing.T) {
 	}
 	if responder == nil {
 		t.Fatalf("Expected responder")
+	}
+
+	block, _ := pem.Decode(ocspCertPEM)
+	ocspCert, _ := x509.ParseCertificate(block.Bytes)
+
+	blockCA, _ := pem.Decode(caCertPEM)
+	caCert, _ := x509.ParseCertificate(blockCA.Bytes)
+
+	// We can't import golang.org/x/crypto/ocsp because it shadows internal ocsp package?
+	// Wait, we can alias it or not use it if we don't need it.
+	// Actually we just need an HTTP POST with bad body to trigger 400
+	reqPost, _ := http.NewRequest("POST", "/ocsp", bytes.NewBuffer([]byte("bad request")))
+	reqPost.Header.Set("Content-Type", "application/ocsp-request")
+	w := httptest.NewRecorder()
+	responder.ServeHTTP(w, reqPost)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", w.Code)
 	}
 }

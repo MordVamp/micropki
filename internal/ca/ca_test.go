@@ -14,7 +14,7 @@ func TestParseDN(t *testing.T) {
 	if len(name.Organization) > 0 && name.Organization[0] != "My Org" {
 		t.Errorf("expected O=My Org, got %v", name.Organization)
 	}
-	
+
 	// Test invalid
 	_, err = ParseDN("invalid_format")
 	if err == nil {

@@ -28,7 +28,7 @@ var repoServeCmd = &cobra.Command{
 		caPass, _ := cmd.Flags().GetString("ca-pass-file")
 		rateLimit, _ := cmd.Flags().GetInt("rate-limit")
 		rateBurst, _ := cmd.Flags().GetInt("rate-burst")
-		
+
 		// Optionally configure log file here if supported
 		if err := logger.Init(""); err != nil {
 			return err
@@ -82,7 +82,7 @@ func init() {
 	repoServeCmd.Flags().String("ca-pass-file", "./secrets/intermediate.pass", "Path to CA passkey file")
 	repoServeCmd.Flags().Int("rate-limit", 0, "Requests per second limit (0 to disable)")
 	repoServeCmd.Flags().Int("rate-burst", 10, "Burst tolerance for rate limiting")
-	
+
 	repoCmd.AddCommand(repoServeCmd)
 	repoCmd.AddCommand(repoStatusCmd)
 	rootCmd.AddCommand(repoCmd)

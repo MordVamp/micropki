@@ -13,7 +13,7 @@ func TestGenerateUniqueSerial(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenerateUniqueSerial failed: %v", err)
 	}
-	
+
 	if serial1.Cmp(serial2) == 0 {
 		t.Errorf("Serials should be unique")
 	}

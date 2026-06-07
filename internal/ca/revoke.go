@@ -35,7 +35,7 @@ var revokeCmd = &cobra.Command{
 			"affiliationchanged": true, "superseded": true, "cessationofoperation": true,
 			"certificatehold": true, "removefromcrl": true, "privilegewithdrawn": true, "aacompromise": true,
 		}
-		
+
 		if !validReasons[strings.ToLower(reason)] {
 			return fmt.Errorf("invalid revocation reason: %s", reason)
 		}

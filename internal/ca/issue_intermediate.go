@@ -225,7 +225,7 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		audit.LogEvent("AUDIT", "issue_intermediate", "failure", err.Error(), map[string]interface{}{"subject": subjectName.String()})
 		return fmt.Errorf("policy violation: %w", err)
 	}
-	
+
 	// Policy enforce: PathLength
 	if interPathLen > 0 {
 		errStr := "Path Length constraint > 0 is forbidden by default policy"
@@ -250,8 +250,8 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 		MaxPathLen:            interPathLen,
 		MaxPathLenZero:        interPathLen == 0, // important to set zero correctly
 
-		PermittedDNSDomains:   interPermittedDNS,
-		ExcludedDNSDomains:    interExcludedDNS,
+		PermittedDNSDomains: interPermittedDNS,
+		ExcludedDNSDomains:  interExcludedDNS,
 
 		SubjectKeyId: ski,
 
@@ -316,8 +316,8 @@ func runIssueIntermediate(cmd *cobra.Command, args []string) error {
 	h.Write(certDER)
 	fingerprint := fmt.Sprintf("%x", h.Sum(nil))
 	audit.LogEvent("AUDIT", "issue_intermediate", "success", "Issued Intermediate CA certificate", map[string]interface{}{
-		"serial":   fmt.Sprintf("%x", serial),
-		"subject":  subjectName.String(),
+		"serial":  fmt.Sprintf("%x", serial),
+		"subject": subjectName.String(),
 	})
 	audit.AppendCTLog(fmt.Sprintf("%x", serial), subjectName.String(), fingerprint, rootCert.Subject.String())
 

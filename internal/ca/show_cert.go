@@ -49,6 +49,6 @@ var showCertCmd = &cobra.Command{
 
 func init() {
 	showCertCmd.Flags().String("db-path", "./pki/micropki.db", "File path for the SQLite database")
-	
+
 	CaCmd.AddCommand(showCertCmd)
 }

@@ -22,7 +22,7 @@ func TestGenCSR(t *testing.T) {
 		"--out-key", outKey,
 		"--out-csr", outCsr,
 	})
-	
+
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Gen-CSR CLI command execution failed natively: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestGenCSR(t *testing.T) {
 	if csr.Subject.CommonName != "micropki.test.com" {
 		t.Errorf("Expected Subject dynamically binding to 'micropki.test.com', instead got %s", csr.Subject.CommonName)
 	}
-	
+
 	// Ensure the private key signed perfectly mapping public structures across boundaries
 	if err := csr.CheckSignature(); err != nil {
 		t.Errorf("Mathematically invalid signature on resulting CSR detected natively: %v", err)

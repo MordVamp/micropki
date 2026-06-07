@@ -93,7 +93,7 @@ var genCsrCmd = &cobra.Command{
 		}
 
 		csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
-		
+
 		keyDER, err := x509.MarshalPKCS8PrivateKey(privKey)
 		if err != nil {
 			return err
@@ -106,7 +106,7 @@ var genCsrCmd = &cobra.Command{
 		if err := os.WriteFile(outKey, keyPEM, 0600); err != nil {
 			return fmt.Errorf("failed writing private key: %w", err)
 		}
-		
+
 		if err := os.WriteFile(outCsr, csrPEM, 0644); err != nil {
 			return fmt.Errorf("failed writing csr: %w", err)
 		}

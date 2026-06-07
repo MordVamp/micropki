@@ -8,7 +8,7 @@ func TestQuery(t *testing.T) {
 	dir := t.TempDir()
 	Init(dir)
 	defer Close()
-	
+
 	LogEvent("INFO", "cert_issue", "success", "issued cert", map[string]interface{}{"serial": "1234"})
 	LogEvent("INFO", "cert_revoke", "success", "revoked cert", map[string]interface{}{"serial": "1234"})
 
@@ -23,7 +23,7 @@ func TestQuery(t *testing.T) {
 	if len(results) != 1 {
 		t.Errorf("Expected 1 result, got %d", len(results))
 	}
-	
+
 	optsSerial := QueryOptions{
 		Serial: "1234",
 	}
