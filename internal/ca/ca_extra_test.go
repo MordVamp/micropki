@@ -157,6 +157,15 @@ func TestCACommandsFullWorkflow(t *testing.T) {
 		t.Skip("Skipping because SQLite requires CGO")
 	}
 
+	// Redirect stdout to avoid polluting test logs with CLI output (like large certificates)
+	oldStdout := os.Stdout
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
+	os.Stdout = devNull
+	defer func() {
+		os.Stdout = oldStdout
+		devNull.Close()
+	}()
+
 	passphraseFile := filepath.Join(tempDir, "passphrase.txt")
 	os.WriteFile(passphraseFile, []byte("password123"), 0644)
 
