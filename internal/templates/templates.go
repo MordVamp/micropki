@@ -20,7 +20,11 @@ const (
 )
 
 func (t TemplateType) String() string {
-	return []string{"server", "client", "code_signing"}[t]
+	names := []string{"server", "client", "code_signing"}
+	if int(t) < 0 || int(t) >= len(names) {
+		return "unknown"
+	}
+	return names[t]
 }
 
 // ParseTemplate converts a string to TemplateType.
