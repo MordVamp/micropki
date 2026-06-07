@@ -33,7 +33,7 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 		"init",
 		"--subject", "CN=Integration Test CA",
 		"--key-type", "rsa",
-		"--key-size", "2048",
+		"--key-size", "4096",
 		"--passphrase-file", passFile,
 		"--out-dir", outDir,
 		"--log-file", logFile,
@@ -46,15 +46,24 @@ func TestIntegrationFullWorkflow(t *testing.T) {
 	}
 
 	// 2. ca issue-cert (Client)
+	caCertPath := filepath.Join(outDir, "certs", "ca.cert.pem")
+	caKeyPath := filepath.Join(outDir, "private", "ca.key.pem")
+	
 	ca.CaCmd.SetArgs([]string{
 		"issue-cert",
 		"--subject", "CN=Test Client",
 		"--template", "client",
+		"--ca-cert", caCertPath,
+		"--ca-key", caKeyPath,
+		"--ca-pass-file", passFile,
 		"--out-dir", outDir,
 		"--db-path", dbPath,
 		"--log-file", logFile,
 	})
 	if err := ca.CaCmd.Execute(); err != nil {
+		if strings.Contains(err.Error(), "CGO_ENABLED=0") {
+			t.Skipf("Skipping integration test due to CGO_ENABLED=0: %v", err)
+		}
 		t.Fatalf("ca issue-cert failed: %v", err)
 	}
 
